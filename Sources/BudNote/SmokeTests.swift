@@ -255,6 +255,55 @@ func runSmokeTests() throws {
     Preferences.shared.wrap = originalWrap
     rulerDocument.close()
     Preferences.shared.fontSize = originalFont
+    // Mixed Markdown heights must map to source lines rather than percentages.
+    let scrollingDocument = TextDocument()
+    scrollingDocument.fileURL = directory.appendingPathComponent("scrolling.md")
+    let scrollingText = (1...80).map { "# Section \($0)\n\nA paragraph with **bold** text.\nSecond paragraph line.\n\n- first item\n- second item\n\n```py\nprint(\($0))\n```\n" }.joined(separator: "\n")
+    try scrollingDocument.read(from: Data(scrollingText.utf8), ofType: "public.plain-text")
+    scrollingDocument.makeWindowControllers()
+    let scrollingEditor = scrollingDocument.editor!
+    let restoreWrap = Preferences.shared.wrap
+    Preferences.shared.wrap = true
+    DocumentWorkspace.shared.activate(scrollingDocument.windowControllers.first!.window!, sender: nil)
+    scrollingEditor.splitMode(nil)
+    RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+    let targetOffset = (scrollingText as NSString).range(of: "# Section 40\n").location
+    let sourceLine = (scrollingText as NSString).substring(to: targetOffset).filter { $0 == "\n" }.count + 1
+    let scrollingView = scrollingEditor.textView, scrollingClip = scrollingEditor.scrollView.contentView
+    scrollingView.layoutManager!.ensureLayout(for: scrollingView.textContainer!)
+    let targetGlyph = scrollingView.layoutManager!.glyphIndexForCharacter(at: targetOffset)
+    let targetY = scrollingView.layoutManager!.lineFragmentRect(forGlyphAt: targetGlyph, effectiveRange: nil).minY + scrollingView.textContainerOrigin.y
+    scrollingClip.scroll(to: NSPoint(x: 0, y: targetY))
+    scrollingEditor.scrollView.reflectScrolledClipView(scrollingClip)
+    func waitForPreviewPosition(_ predicate: @escaping ([String: Double]) -> Bool) -> Bool {
+        var matched = false
+        let deadline = Date().addingTimeInterval(5)
+        while !matched && Date() < deadline {
+            scrollingEditor.inspectPreviewPosition(line: sourceLine) { value, _ in if let value, predicate(value) { matched = true } }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        }
+        return matched
+    }
+    try require(waitForPreviewPosition { $0["y", default: 0] > 0 && abs($0["top", default: -9999]) < 5 }, "Markdown preview did not align with the visible source heading")
+    let fixedWidth = scrollingView.frame.width
+    let unchangedHighlights = scrollingEditor.highlightPassCount, unchangedPreview = scrollingEditor.previewUpdateCount
+    var lastScroll = scrollingClip.bounds.minY
+    for _ in 0..<8 {
+        scrollingEditor.scrollView.scrollWheel(with: try wheel(-3, command: false))
+        RunLoop.current.run(until: Date().addingTimeInterval(0.03))
+        let position = scrollingClip.bounds.minY
+        try require(position > lastScroll, "Markdown wheel scrolling stalled or rebounded")
+        for _ in 0..<3 { scrollingEditor.scrollView.tile() }
+        try require(abs(scrollingClip.bounds.minY - position) < 0.5 && scrollingView.frame.width == fixedWidth, "Tiling changed the Markdown scroll offset or wrapping width")
+        lastScroll = position
+    }
+    try require(scrollingEditor.highlightPassCount == unchangedHighlights && scrollingEditor.previewUpdateCount == unchangedPreview, "Scrolling rescanned syntax or rerendered Markdown")
+    scrollingClip.scroll(to: NSPoint(x: 0, y: max(0, scrollingView.bounds.height - scrollingClip.bounds.height)))
+    try require(waitForPreviewPosition { abs($0["y", default: -9999] - $0["max", default: 0]) < 2 }, "Preview did not reach the bottom with the editor")
+    scrollingClip.scroll(to: .zero)
+    try require(waitForPreviewPosition { abs($0["y", default: -9999]) < 1 }, "Preview did not return to the top with the editor")
+    try require(scrollingView.string == scrollingText && !scrollingDocument.isDocumentEdited, "Scroll synchronization edited the document")
+    scrollingDocument.close(); Preferences.shared.wrap = restoreWrap
     // Save As with another extension and encoding keeps the original file intact.
     let copy = directory.appendingPathComponent("另存.java")
     let chosenCodec = TextCodec(encoding: .utf16LittleEndian, bom: Data([0xff, 0xfe]))
@@ -284,6 +333,6 @@ func runSmokeTests() throws {
     try require(document.fileURL == moved && !FileManager.default.fileExists(atPath: copy.path), "Move did not update file location")
     try require(try Data(contentsOf: moved) == chosenCodec.encode(document.content), "Move lost pending edits")
     document.close()
-    print("PASS: file type registration, document open/save, CRLF preservation, NSTextView editing, undo/redo, WebKit Markdown live preview, reading/editing focus, compact toolbar, native window controls, theme switching, conditional Markdown controls, file tabs, About project link, first-click split geometry, larger find/replace, replacement undo, Save As encoding and error recovery, move with pending edits, persistent host document ownership, closing active tabs, 80-percent tab width, overflow scrolling and Command-wheel font zoom, large-font line-number clipping and unwrapped scrollbar separation")
+    print("PASS: file type registration, document open/save, CRLF preservation, NSTextView editing, undo/redo, WebKit Markdown live preview, reading/editing focus, compact toolbar, native window controls, theme switching, conditional Markdown controls, file tabs, About project link, first-click split geometry, larger find/replace, replacement undo, Save As encoding and error recovery, move with pending edits, persistent host document ownership, closing active tabs, 80-percent tab width, overflow scrolling and Command-wheel font zoom, large-font line-number clipping, unwrapped scrollbar separation, stable Markdown wheel scrolling and source-mapped preview synchronization")
 }
 #endif

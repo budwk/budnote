@@ -4,11 +4,18 @@
 
 项目地址：[github.com/budwk/budnote](https://github.com/budwk/budnote)
 
-1.0.8：优化文件标签切换，复用已有高亮、Markdown 预览及标签控件，减少重复渲染和布局开销。
+1.0.9：修复 Markdown 分栏编辑区滚动卡顿与回弹；右侧预览按源码行位置跟随左侧滚动。
+
+## 界面
+
+<p align="center">
+  <a href="Resources/bn00.png"><img src="Resources/bn00.png" alt="BudNote 纯文本编辑界面" width="49%"></a>
+  <a href="Resources/bn01.png"><img src="Resources/bn01.png" alt="BudNote Markdown 编辑与实时预览界面" width="49%"></a>
+</p>
 
 ## 安装与使用
 
-打开 `dist/BudNote-1.0.8-universal.dmg`，将 **BudNote.app** 拖入 **Applications** 后启动。也可以解压 ZIP 后拖入“应用程序”。安装无需管理员脚本，不修改系统默认应用；在 **BudNote → 设置** 中选择需要关联的类型并点击“设为所选类型的默认应用”。系统可能要求确认。
+打开 `dist/BudNote-1.0.9-universal.dmg`，将 **BudNote.app** 拖入 **Applications** 后启动。也可以解压 ZIP 后拖入“应用程序”。安装无需管理员脚本，不修改系统默认应用；在 **BudNote → 设置** 中选择需要关联的类型并点击“设为所选类型的默认应用”。系统可能要求确认。
 
 本地构建采用 ad-hoc 签名，没有 Apple 公证。首次被 Gatekeeper 阻止时，在“系统设置 → 隐私与安全性”选择“仍要打开”。对外正式分发应按下面说明使用 Developer ID 签名和公证。卸载只需将应用移入废纸篓，文档仍保留。
 
@@ -16,7 +23,7 @@
 
 - 新建、打开、保存、另存为、最近文件、紧凑文件标签（支持关闭、横向滚动与快捷键切换）；支持 Finder 双击及拖放到 Dock 图标打开。
 - 支持 txt、md、markdown、html、py、java、js、ts、json、css、xml、yaml、toml、log、sh、swift、C/C++ 等纯文本文件。
-- Markdown 编辑、双栏实时预览、阅读模式；标题、段落、强调、删除线、列表、任务项、引用、代码围栏、表格、链接。
+- Markdown 编辑、双栏实时预览（跟随编辑区滚动）、阅读模式；标题、段落、强调、删除线、列表、任务项、引用、代码围栏、表格、链接。
 - HTML、Python、Java 及常见代码文件的关键词、字符串、注释、数字高亮。高亮仅影响显示，不会写入文件或干扰撤销。
 - 跟随系统/浅色/深色主题，10–40 pt 等宽字体，自动换行、行号。偏好持久化并同步到所有窗口。
 - 系统剪切/复制/纯文本粘贴、撤销/重做、增量查找/替换（包括全部替换）。
@@ -70,7 +77,7 @@ open dist/BudNote.app
 
 ```bash
 ./scripts/release.sh                         # 默认 universal，生成 DMG、ZIP、SHA256
-VERSION=1.0.8 ARCH=arm64 ./scripts/release.sh # 指定版本及架构
+VERSION=1.0.9 ARCH=arm64 ./scripts/release.sh # 指定版本及架构
 ```
 
 DMG 中包含应用、“应用程序”快捷方式及安装说明。默认应用注册使用官方 [NSWorkspace API](https://developer.apple.com/documentation/appkit/nsworkspace/setdefaultapplication(at:toopen:completion:))，失败时会显示原因，也可在 Finder“显示简介 → 打开方式 → 全部更改”设置。
@@ -82,7 +89,7 @@ DMG 中包含应用、“应用程序”快捷方式及安装说明。默认应�
 xcrun notarytool store-credentials "BudNoteNotary"
 
 SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
-NOTARY_PROFILE="BudNoteNotary" VERSION=1.0.8 ./scripts/release.sh
+NOTARY_PROFILE="BudNoteNotary" VERSION=1.0.9 ./scripts/release.sh
 ```
 
 脚本会启用 Hardened Runtime、提交 DMG 公证、给应用及 DMG 装订公证票据，再生成带票据的 ZIP 和校验和。设置 `NOTARY_PROFILE` 时必须提供 `SIGN_IDENTITY`。本仓库不会包含签名私钥、密码或公证凭据。

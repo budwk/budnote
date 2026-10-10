@@ -35,6 +35,16 @@ final class BudCoreTests: XCTestCase {
         XCTAssertTrue(html.contains("<code>**literal**</code>")); XCTAssertTrue(html.contains("href='https://example.com?q=1&amp;x=2'"))
         XCTAssertTrue(Markdown.page("hello").contains("script-src 'none'"))
     }
+    func testMarkdownSourcePositions() {
+        let source = "# Heading\r\n\r\nfirst\r\nsecond\r\n\r\n```py\r\nprint(1)\r\n```\r\n\r\n| a | b |\r\n| --- | --- |\r\n| 1 | 2 |\r\n\r\n- item\r\n> quote"
+        let html = Markdown.render(source, sourcePositions: true)
+        for fragment in ["<h1 data-source-line='1'", "<span data-source-line='3'", "<span data-source-line='4'", "<pre data-source-line='6' data-source-end='8'", "<tr data-source-line='10'", "<tr data-source-line='12'", "<li data-source-line='14'", "<blockquote data-source-line='15'"] {
+            XCTAssertTrue(html.contains(fragment), fragment)
+        }
+        XCTAssertFalse(Markdown.render(source).contains("data-source-line"))
+        XCTAssertTrue(Markdown.render("```\nx\ny", sourcePositions: true).contains("data-source-line='1' data-source-end='3'"))
+        XCTAssertFalse(Markdown.render("<script>bad()</script>", sourcePositions: true).contains("<script>"))
+    }
     func testSyntaxStringsAndCommentsDoNotOverlap() {
         let source = "class Hello { String s = \"// not a comment\"; // \"comment\"\n int n = 42; }"
         let tokens = Syntax.tokens(source, language: "java")

@@ -37,12 +37,22 @@ public enum Markdown {
         for (index, token) in tokens.enumerated().reversed() { value = value.replacingOccurrences(of: "\u{001f}\(index)\u{001f}", with: token) }
         return value
     }
-    public static func render(_ source: String) -> String {
+    public static func render(_ source: String, sourcePositions: Bool = false) -> String {
         let lines = source.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n").components(separatedBy: "\n")
-        var output: [String] = [], paragraph: [String] = [], code: [String] = []
+        var output: [String] = [], paragraph: [(String, Int)] = [], code: [String] = []
+        var codeStart = 1
         var fence: String?, list: String?
+        func positioned(_ html: String, line: Int, end: Int? = nil) -> String {
+            guard sourcePositions, let insertion = html.firstIndex(of: ">") else { return html }
+            var result = html
+            result.insert(contentsOf: " data-source-line='\(line)' data-source-end='\(end ?? line)'", at: insertion)
+            return result
+        }
         func flush() {
-            if !paragraph.isEmpty { output.append("<p>\(paragraph.map(inline).joined(separator: "<br>"))</p>"); paragraph.removeAll() }
+            if !paragraph.isEmpty {
+                output.append("<p>\(paragraph.map { sourcePositions ? positioned("<span>\(inline($0.0))</span>", line: $0.1) : inline($0.0) }.joined(separator: "<br>"))</p>")
+                paragraph.removeAll()
+            }
         }
         func closeList() { if let kind = list { output.append("</\(kind)>"); list = nil } }
         func cells(_ line: String) -> [String] {
@@ -55,39 +65,39 @@ public enum Markdown {
             let line = lines[i], trimmed = line.trimmingCharacters(in: .whitespaces)
             i += 1
             if let marker = fence {
-                if trimmed.hasPrefix(marker) { output.append("<pre><code>\(escape(code.joined(separator: "\n")))</code></pre>"); code.removeAll(); fence = nil }
+                if trimmed.hasPrefix(marker) { output.append(positioned("<pre><code>\(escape(code.joined(separator: "\n")))</code></pre>", line: codeStart, end: i)); code.removeAll(); fence = nil }
                 else { code.append(line) }
                 continue
             }
-            if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") { flush(); closeList(); fence = String(trimmed.prefix(3)); continue }
+            if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") { flush(); closeList(); fence = String(trimmed.prefix(3)); codeStart = i; continue }
             if trimmed.isEmpty { flush(); closeList(); continue }
             if i < lines.count, line.contains("|"), cells(lines[i]).allSatisfy({ $0.range(of: #"^:?-{3,}:?$"#, options: .regularExpression) != nil }), !cells(lines[i]).isEmpty {
                 flush(); closeList()
-                let header = cells(line); i += 1
-                output.append("<table><thead><tr>" + header.map { "<th>\(inline($0))</th>" }.joined() + "</tr></thead><tbody>")
+                let header = cells(line), headerLine = i; i += 1
+                output.append("<table><thead>" + positioned("<tr>" + header.map { "<th>\(inline($0))</th>" }.joined() + "</tr>", line: headerLine) + "</thead><tbody>")
                 while i < lines.count && lines[i].contains("|") && !lines[i].isEmpty {
-                    output.append("<tr>" + cells(lines[i]).map { "<td>\(inline($0))</td>" }.joined() + "</tr>"); i += 1
+                    output.append(positioned("<tr>" + cells(lines[i]).map { "<td>\(inline($0))</td>" }.joined() + "</tr>", line: i + 1)); i += 1
                 }
                 output.append("</tbody></table>"); continue
             }
             if let match = trimmed.range(of: #"^#{1,6}\s+"#, options: .regularExpression) {
                 flush(); closeList(); let level = trimmed[match].filter { $0 == "#" }.count
-                output.append("<h\(level)>\(inline(String(trimmed[match.upperBound...])))</h\(level)>"); continue
+                output.append(positioned("<h\(level)>\(inline(String(trimmed[match.upperBound...])))</h\(level)>", line: i)); continue
             }
-            if trimmed.range(of: #"^(\*\s*){3,}$|^(-\s*){3,}$|^(_\s*){3,}$"#, options: .regularExpression) != nil { flush(); closeList(); output.append("<hr>"); continue }
-            if trimmed.hasPrefix(">") { flush(); closeList(); output.append("<blockquote>\(inline(String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces)))</blockquote>"); continue }
+            if trimmed.range(of: #"^(\*\s*){3,}$|^(-\s*){3,}$|^(_\s*){3,}$"#, options: .regularExpression) != nil { flush(); closeList(); output.append(positioned("<hr>", line: i)); continue }
+            if trimmed.hasPrefix(">") { flush(); closeList(); output.append(positioned("<blockquote>\(inline(String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces)))</blockquote>", line: i)); continue }
             if let range = trimmed.range(of: #"^([-+*]|\d+[.)])\s+"#, options: .regularExpression) {
                 flush(); let kind = trimmed.first?.isNumber == true ? "ol" : "ul"
                 if list != kind { closeList(); output.append("<\(kind)>"); list = kind }
                 var item = String(trimmed[range.upperBound...])
                 var prefix = ""
                 if item.hasPrefix("[ ] ") || item.lowercased().hasPrefix("[x] ") { prefix = item.hasPrefix("[ ] ") ? "☐ " : "☑ "; item = String(item.dropFirst(4)) }
-                output.append("<li>\(prefix)\(inline(item))</li>"); continue
+                output.append(positioned("<li>\(prefix)\(inline(item))</li>", line: i)); continue
             }
-            closeList(); paragraph.append(line)
+            closeList(); paragraph.append((line, i))
         }
         flush(); closeList()
-        if fence != nil { output.append("<pre><code>\(escape(code.joined(separator: "\n")))</code></pre>") }
+        if fence != nil { output.append(positioned("<pre><code>\(escape(code.joined(separator: "\n")))</code></pre>", line: codeStart, end: lines.count)) }
         return output.joined(separator: "\n")
     }
     public static func page(_ source: String, fontSize: Double = 16) -> String {
@@ -104,7 +114,7 @@ public enum Markdown {
         a{color:var(--accent)}code{font: .88em/1.6 ui-monospace,Menlo,monospace;background:var(--code);padding:2px 5px;border-radius:4px}pre{background:var(--code);padding:16px;border-radius:10px;overflow:auto}pre code{padding:0;white-space:pre}
         blockquote{margin:16px 0;padding:8px 18px;border-left:3px solid var(--accent);color:var(--muted);background:var(--code);border-radius:0 8px 8px 0}
         table{border-collapse:collapse;display:block;overflow:auto}td,th{border:1px solid var(--line);padding:8px 14px}th{background:var(--code)}hr{border:0;border-top:1px solid var(--line);margin:24px 0}.image{color:var(--muted)}
-        </style></head><body><main>\(render(source))</main></body></html>
+        </style></head><body><main>\(render(source, sourcePositions: true))</main></body></html>
         """
     }
 }

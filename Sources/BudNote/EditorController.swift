@@ -37,6 +37,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
     private var languageOverride: String?
     private var applying = false
     private var appliedColorScheme: NSAppearance.Name?
+    private var previewScrollWork: DispatchWorkItem?
     #if DEBUG
     private(set) var highlightPassCount = 0
     private(set) var previewUpdateCount = 0
@@ -54,6 +55,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
     required init?(coder: NSCoder) { fatalError() }
     deinit {
         changeWork?.cancel()
+        previewScrollWork?.cancel()
         observers.forEach(NotificationCenter.default.removeObserver)
     }
     override func loadView() {
@@ -75,6 +77,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         splitView.isVertical = true; splitView.dividerStyle = .thin; splitView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.hasVerticalScroller = true; scrollView.hasHorizontalScroller = true; scrollView.autohidesScrollers = true
         scrollView.borderType = .noBorder; scrollView.drawsBackground = true
+        scrollView.verticalScrollElasticity = .none; scrollView.horizontalScrollElasticity = .none
         scrollView.automaticallyAdjustsContentInsets = false
         scrollView.contentInsets = NSEdgeInsetsZero
         scrollView.contentView.automaticallyAdjustsContentInsets = false
@@ -94,7 +97,9 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         ruler = LineNumberRuler(textView: textView, scrollView: scrollView)
         scrollView.verticalRulerView = ruler; scrollView.hasVerticalRuler = true
         scrollView.contentView.postsBoundsChangedNotifications = true
-        observers.append(NotificationCenter.default.addObserver(forName: NSView.boundsDidChangeNotification, object: scrollView.contentView, queue: .main) { [weak self] _ in self?.ruler.needsDisplay = true })
+        observers.append(NotificationCenter.default.addObserver(forName: NSView.boundsDidChangeNotification, object: scrollView.contentView, queue: .main) { [weak self] _ in
+            self?.ruler.needsDisplay = true; self?.schedulePreviewScroll()
+        })
         observers.append(NotificationCenter.default.addObserver(forName: .preferencesChanged, object: nil, queue: .main) { [weak self] _ in self?.applyPreferences() })
         webView.navigationDelegate = self; webView.setAccessibilityLabel("Markdown 阅读预览")
         splitView.addArrangedSubview(scrollView); splitView.addArrangedSubview(webView)
@@ -213,6 +218,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         scrollView.tile()
         textView.isHorizontallyResizable = !wrap
         container.widthTracksTextView = wrap
+        textView.layoutManager?.allowsNonContiguousLayout = !(markdown && mode == 1 && (textView.string as NSString).length <= 1_000_000)
         if wrap {
             textView.setFrameSize(NSSize(width: scrollView.contentSize.width, height: max(textView.frame.height, scrollView.contentSize.height)))
             container.containerSize = NSSize(width: max(1, scrollView.contentSize.width - 20), height: CGFloat.greatestFiniteMagnitude)
@@ -284,9 +290,71 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
             return
         }
         let dark = view.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        let payload = ["html": Markdown.render(source), "size": "\(Preferences.shared.fontSize + 1)px", "theme": dark ? "dark" : "light"]
+        let payload = ["html": Markdown.render(source, sourcePositions: true), "size": "\(Preferences.shared.fontSize + 1)px", "theme": dark ? "dark" : "light"]
         guard let data = try? JSONSerialization.data(withJSONObject: payload), let json = String(data: data, encoding: .utf8) else { return }
-        webView.evaluateJavaScript("(() => { const p = \(json); document.querySelector('main').innerHTML = p.html; document.body.style.fontSize = p.size; document.documentElement.dataset.theme = p.theme; })()", completionHandler: nil)
+        webView.evaluateJavaScript("(() => { const p = \(json); document.querySelector('main').innerHTML = p.html; document.body.style.fontSize = p.size; document.documentElement.dataset.theme = p.theme; \(Self.previewScrollScript) })()") { [weak self] _, _ in self?.schedulePreviewScroll() }
+    }
+    private static let previewScrollScript = """
+    window.__budnoteScrollMap = null;
+    window.__budnoteSyncScroll = (line, progress) => {
+      const key = innerWidth + ':' + innerHeight;
+      let cached = window.__budnoteScrollMap;
+      if (!cached || cached.key !== key) {
+        const points = [];
+        for (const node of document.querySelectorAll('main [data-source-line]')) {
+          const rect = node.getBoundingClientRect();
+          const start = Number(node.dataset.sourceLine), end = Number(node.dataset.sourceEnd);
+          points.push({line:start, y:rect.top + scrollY});
+          if (end > start) points.push({line:end + 1, y:rect.bottom + scrollY});
+        }
+        points.sort((a,b) => a.line - b.line);
+        cached = window.__budnoteScrollMap = {key, points};
+      }
+      const maxY = Math.max(0, document.documentElement.scrollHeight - innerHeight);
+      let y = progress * maxY;
+      const points = cached.points;
+      if (points.length && progress > 0 && progress < 1) {
+        let lo = 0, hi = points.length;
+        while (lo < hi) { const mid = (lo + hi) >> 1; if (points[mid].line <= line) lo = mid + 1; else hi = mid; }
+        const a = points[Math.max(0,lo - 1)], b = points[Math.min(points.length - 1,lo)];
+        const fraction = b.line > a.line ? Math.max(0,Math.min(1,(line - a.line)/(b.line - a.line))) : 0;
+        y = a.y + (b.y - a.y) * fraction;
+      }
+      window.scrollTo(0, Math.max(0,Math.min(maxY,y)));
+    };
+    """
+    private func schedulePreviewScroll() {
+        guard mode == 1, markdown, previewReady, previewScrollWork == nil else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.previewScrollWork = nil
+            self.synchronizePreviewScroll()
+        }
+        previewScrollWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 60.0, execute: work)
+    }
+    private func synchronizePreviewScroll() {
+        guard mode == 1, markdown, previewReady, (textView.string as NSString).length <= 1_000_000,
+              let manager = textView.layoutManager, let container = textView.textContainer else { return }
+        let origin = scrollView.contentView.bounds.minY
+        let maximum = max(0, textView.bounds.height - scrollView.contentView.bounds.height)
+        let progress = maximum > 0 ? min(1, max(0, origin / maximum)) : 0
+        let point = NSPoint(x: 0, y: max(0, origin - textView.textContainerOrigin.y))
+        let glyph = manager.glyphIndex(for: point, in: container)
+        let character = manager.numberOfGlyphs > 0 ? manager.characterIndexForGlyph(at: min(glyph, manager.numberOfGlyphs - 1)) : 0
+        var low = 0, high = ruler.lineStarts.count
+        while low < high { let mid = (low + high) / 2; if ruler.lineStarts[mid] <= character { low = mid + 1 } else { high = mid } }
+        let index = max(0, low - 1), start = ruler.lineStarts[index]
+        let length = (textView.string as NSString).length
+        func y(_ offset: Int) -> CGFloat {
+            if offset >= length { return manager.extraLineFragmentRect.minY + textView.textContainerOrigin.y }
+            return manager.lineFragmentRect(forGlyphAt: manager.glyphIndexForCharacter(at: offset), effectiveRange: nil).minY + textView.textContainerOrigin.y
+        }
+        let top = y(start)
+        let bottom = index + 1 < ruler.lineStarts.count ? y(ruler.lineStarts[index + 1]) : textView.bounds.height
+        let fraction = bottom > top ? min(1, max(0, (origin - top) / (bottom - top))) : 0
+        let line = Double(index + 1) + Double(fraction)
+        webView.evaluateJavaScript("window.__budnoteSyncScroll?.(\(line), \(progress))", completionHandler: nil)
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { previewReady = true; updatePreview() }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -330,6 +398,9 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
     var lineNumberWidth: CGFloat { ruler.ruleThickness }
     func inspectPreview(completion: @escaping (String?, Error?) -> Void) {
         webView.evaluateJavaScript("document.body.innerText") { value, error in completion(value as? String, error) }
+    }
+    func inspectPreviewPosition(line: Int, completion: @escaping ([String: Double]?, Error?) -> Void) {
+        webView.evaluateJavaScript("({y:scrollY, top:document.querySelector('[data-source-line=\"\(line)\"]')?.getBoundingClientRect().top ?? -9999, max:document.documentElement.scrollHeight-innerHeight})") { value, error in completion(value as? [String: Double], error) }
     }
     #endif
     @objc func changeMode(_ sender: NSSegmentedControl) { setMode(sender.selectedSegment) }

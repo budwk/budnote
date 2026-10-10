@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION="${VERSION:-1.0.8}"
+VERSION="${VERSION:-1.0.9}"
 ARCH="${ARCH:-$(uname -m)}"
 CONFIGURATION="${CONFIGURATION:-release}"
 APP="$(pwd)/dist/BudNote.app"

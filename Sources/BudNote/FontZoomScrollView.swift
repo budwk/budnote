@@ -5,6 +5,10 @@ import AppKit
 final class FontZoomScrollView: NSScrollView {
     private var zoomDelta: CGFloat = 0
     override func tile() {
+        let oldViewport = contentView.frame, oldOrigin = contentView.bounds.origin
+        let autoresizes = contentView.autoresizesSubviews
+        contentView.autoresizesSubviews = false
+        defer { contentView.autoresizesSubviews = autoresizes }
         super.tile()
         // Some AppKit versions keep the clip view underneath sibling tracks
         // and reserve only scrolling insets. Use an actual clipped viewport.
@@ -32,6 +36,14 @@ final class FontZoomScrollView: NSScrollView {
             }
         }
         if contentView.frame != viewport { contentView.frame = viewport }
+        if let documentView, documentView.autoresizingMask.contains(.width), documentView.frame.width != viewport.width {
+            documentView.setFrameSize(NSSize(width: viewport.width, height: documentView.frame.height))
+        }
+        // Tiling must not reflow text through a temporarily wider viewport or
+        // clamp a valid scroll offset against that temporary size.
+        if oldViewport == viewport, contentView.bounds.origin != oldOrigin {
+            contentView.setBoundsOrigin(oldOrigin)
+        }
     }
     override func scrollWheel(with event: NSEvent) {
         guard event.modifierFlags.contains(.command) else {
