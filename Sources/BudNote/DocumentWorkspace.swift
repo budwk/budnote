@@ -62,12 +62,17 @@ final class DocumentWorkspace: NSObject {
                 host.isDocumentEdited = incoming.document?.isDocumentEdited ?? false
                 host.representedURL = incoming.document?.fileURL
                 parked.representedURL = outgoing.document?.fileURL
-                parked.setFrame(parkedFrame, display: false, animate: false)
-                host.setFrame(hostFrame, display: false, animate: false)
+                // Refresh after titles and URLs are synchronized; refreshing
+                // during ownership transfer would rebuild tabs with stale names.
+                outgoingEditor.refreshChrome()
+                incomingEditor.refreshChrome()
+                if parked.frame != parkedFrame { parked.setFrame(parkedFrame, display: false, animate: false) }
+                if host.frame != hostFrame { host.setFrame(hostFrame, display: false, animate: false) }
                 selectedController = incoming
                 incomingEditor.restoreFocus()
                 host.contentView?.layoutSubtreeIfNeeded()
-                host.displayIfNeeded()
+                // AppKit paints the completed swap at the next event flush;
+                // forcing a full-window repaint here blocks the tab click.
             }
             // The host already belongs to the active fullscreen space and remains
             // visible/key. Only restore it when the user had minimized the app.

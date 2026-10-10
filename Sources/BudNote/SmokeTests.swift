@@ -64,12 +64,17 @@ func runSmokeTests() throws {
         try require(window.frame == hostFrame && window.animationBehavior == .none && window.isVisible, "Switch changed frame, visibility or animation behavior: \(hostFrame) -> \(window.frame), visible=\(window.isVisible), animation=\(window.animationBehavior.rawValue)")
         try require(document.windowControllers.first?.window === other && editor.view.window === other, "Inactive document lost its parked controller")
         let hostToolbar = window.toolbar
+        RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        let highlightPasses = editor.highlightPassCount + second.editor!.highlightPassCount
+        let firstTabViews = editor.tabViewIdentities, secondTabViews = second.editor!.tabViewIdentities
         for index in 0..<8 {
             let target = index % 2 == 0 ? document : second
             DocumentWorkspace.shared.activate(target.windowControllers.first!.window!, sender: nil)
             RunLoop.current.run(until: Date().addingTimeInterval(0.015))
             try require(window.frame == hostFrame && window.toolbar === hostToolbar && window.windowController?.document === target, "Repeated switching recreated toolbar, drifted frame or bound wrong document")
         }
+        try require(editor.highlightPassCount + second.editor!.highlightPassCount == highlightPasses, "Switching tabs rescanned syntax without a content or theme change")
+        try require(editor.tabViewIdentities == firstTabViews && second.editor!.tabViewIdentities == secondTabViews, "Switching tabs rebuilt unchanged tab controls")
         // Closing the selected tab transfers the host before closing its document.
         second.close(); editor.refreshChrome()
         try require(document.windowControllers.first?.window === window && window.isVisible, "Closing selected tab lost the visible host")
@@ -138,6 +143,32 @@ func runSmokeTests() throws {
         editor.inspectPreview { value, _ in if value?.contains("LIVE") == true { completed = true } }
     }
     try require(completed, "Live preview did not update after editing")
+    // Switch a highlighted code file against an already-rendered Markdown pane.
+    // Neither syntax nor preview work should run just because its tab is selected.
+    let codeDocument = TextDocument()
+    codeDocument.fileURL = directory.appendingPathComponent("switch-performance.py")
+    let code = Array(repeating: "def greet(value): return 'hello' if value > 12 else None", count: 2500).joined(separator: "\n")
+    try codeDocument.read(from: Data(code.utf8), ofType: "public.plain-text")
+    codeDocument.makeWindowControllers()
+    let codeEditor = codeDocument.editor!
+    DocumentWorkspace.shared.activate(codeDocument.windowControllers.first!.window!, sender: nil)
+    DocumentWorkspace.shared.activate(document.windowControllers.first!.window!, sender: nil)
+    RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    let cachedHighlights = editor.highlightPassCount + codeEditor.highlightPassCount
+    let cachedPreview = editor.previewUpdateCount
+    let preservedSelection = editor.textView.selectedRange(), preservedDirty = document.isDocumentEdited
+    var switchTimes: [Double] = []
+    for index in 0..<12 {
+        let target = index % 2 == 0 ? codeDocument : document
+        let start = ProcessInfo.processInfo.systemUptime
+        DocumentWorkspace.shared.activate(target.windowControllers.first!.window!, sender: nil)
+        switchTimes.append((ProcessInfo.processInfo.systemUptime - start) * 1000)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.015))
+    }
+    try require(editor.highlightPassCount + codeEditor.highlightPassCount == cachedHighlights && editor.previewUpdateCount == cachedPreview, "Tab switching repeated syntax or Markdown rendering")
+    try require(editor.textView.selectedRange() == preservedSelection && document.isDocumentEdited == preservedDirty && codeEditor.textView.string == code, "Tab switching changed selection, edited state or code")
+    print(String(format: "Tab switch benchmark: %d-character Python + live Markdown, average %.1f ms, maximum %.1f ms (12 switches)", (code as NSString).length, switchTimes.reduce(0, +) / Double(switchTimes.count), switchTimes.max()!))
+    codeDocument.close()
     editor.readMode(nil)
     try require(document.windowControllers.first?.window?.firstResponder !== view, "Reading mode retained hidden editor focus")
     editor.editMode(nil)

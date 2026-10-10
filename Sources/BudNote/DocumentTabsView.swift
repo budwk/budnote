@@ -4,6 +4,7 @@ import AppKit
 final class DocumentTabsView: NSScrollView {
     private let stack = NSStackView()
     private var signature = ""
+    private var selection: ObjectIdentifier?
     private var viewportWidth: CGFloat = 420
     private var widthConstraint: NSLayoutConstraint!
     override var intrinsicContentSize: NSSize { NSSize(width: viewportWidth, height: 28) }
@@ -26,6 +27,7 @@ final class DocumentTabsView: NSScrollView {
     #if DEBUG
     var tabTitles: [String] { stack.arrangedSubviews.compactMap { ($0.subviews.first as? NSButton)?.title } }
     var tabCount: Int { stack.arrangedSubviews.count }
+    var tabViewIdentities: [ObjectIdentifier] { stack.arrangedSubviews.map(ObjectIdentifier.init) }
     #endif
     func updateViewportWidth(_ windowWidth: CGFloat, reservesMarkdownControls: Bool) {
         let width = max(150, min(windowWidth * 0.8, windowWidth - (reservesMarkdownControls ? 210 : 110)))
@@ -44,18 +46,29 @@ final class DocumentTabsView: NSScrollView {
     func refresh(for window: NSWindow) {
         let windows = DocumentWorkspace.shared.windows
         let current = windows.contains(window) ? windows : [window]
-        let next = current.map { "\(ObjectIdentifier($0.windowController ?? $0)):\($0.title):\($0.budnoteIsEdited):\($0 === window)" }.joined(separator: "|")
-        guard next != signature else { return }
+        let next = current.map { "\(ObjectIdentifier($0.windowController ?? $0)):\($0.title):\($0.budnoteIsEdited):\($0.representedURL?.absoluteString ?? "")" }.joined(separator: "|")
+        let nextSelection = ObjectIdentifier(window.windowController ?? window)
+        guard next != signature || selection != nextSelection else { return }
+        let rebuild = next != signature
         signature = next
-        for view in stack.arrangedSubviews { stack.removeArrangedSubview(view); view.removeFromSuperview() }
+        selection = nextSelection
         var selected: NSView?
-        for tabWindow in current {
-            let tab = FileTabView(window: tabWindow, selected: tabWindow === window)
-            stack.addArrangedSubview(tab)
-            if tabWindow === window { selected = tab }
+        if rebuild {
+            for view in stack.arrangedSubviews { stack.removeArrangedSubview(view); view.removeFromSuperview() }
+            for tabWindow in current {
+                let tab = FileTabView(window: tabWindow, selected: tabWindow === window)
+                stack.addArrangedSubview(tab)
+                if tabWindow === window { selected = tab }
+            }
+            stack.layoutSubtreeIfNeeded()
+            stack.frame = NSRect(x: 0, y: 0, width: stack.fittingSize.width, height: 28)
+        } else {
+            for case let tab as FileTabView in stack.arrangedSubviews {
+                let active = tab.represents(window)
+                tab.updateSelection(active)
+                if active { selected = tab }
+            }
         }
-        stack.layoutSubtreeIfNeeded()
-        stack.frame = NSRect(x: 0, y: 0, width: stack.fittingSize.width, height: 28)
         if let selected {
             var x = contentView.bounds.minX
             if selected.frame.minX < x { x = selected.frame.minX }
@@ -67,12 +80,14 @@ final class DocumentTabsView: NSScrollView {
 }
 private final class FileTabView: NSView {
     private weak var tabController: DocumentWindowController?
-    private let selected: Bool
+    private var selected: Bool
+    private let button: NSButton
     init(window: NSWindow, selected: Bool) {
         tabController = window.windowController as? DocumentWindowController; self.selected = selected
-        super.init(frame: .zero)
         let name = window.title.isEmpty ? "未命名" : window.title
-        let button = NSButton(title: name + (window.budnoteIsEdited ? " - 已编辑" : ""), target: self, action: #selector(selectTab(_:)))
+        button = NSButton(title: name + (window.budnoteIsEdited ? " - 已编辑" : ""), target: nil, action: #selector(selectTab(_:)))
+        super.init(frame: .zero)
+        button.target = self
         button.isBordered = false; button.font = .systemFont(ofSize: 12, weight: selected ? .medium : .regular)
         button.contentTintColor = selected ? .labelColor : .secondaryLabelColor
         button.lineBreakMode = .byTruncatingMiddle; button.toolTip = window.representedURL?.path ?? name
@@ -88,6 +103,15 @@ private final class FileTabView: NSView {
             close.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6), close.centerYAnchor.constraint(equalTo: centerYAnchor), close.widthAnchor.constraint(equalToConstant: 14), close.heightAnchor.constraint(equalToConstant: 14)])
     }
     required init?(coder: NSCoder) { fatalError() }
+    func represents(_ window: NSWindow) -> Bool { tabController === window.windowController }
+    func updateSelection(_ active: Bool) {
+        guard selected != active else { return }
+        selected = active
+        button.font = .systemFont(ofSize: 12, weight: active ? .medium : .regular)
+        button.contentTintColor = active ? .labelColor : .secondaryLabelColor
+        button.setAccessibilityValue(active ? "当前标签" : "")
+        needsDisplay = true
+    }
     override func draw(_ dirtyRect: NSRect) {
         let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
         let path = NSBezierPath(roundedRect: rect, xRadius: 5, yRadius: 5)

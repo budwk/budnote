@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-export VERSION="${VERSION:-1.0.7}"
+export VERSION="${VERSION:-1.0.8}"
 export ARCH="${ARCH:-universal}"
 if [[ -n "${NOTARY_PROFILE:-}" && -z "${SIGN_IDENTITY:-}" ]]; then
     printf '公证需要 SIGN_IDENTITY（Developer ID Application）。\n' >&2; exit 1

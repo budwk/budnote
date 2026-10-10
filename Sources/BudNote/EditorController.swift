@@ -36,6 +36,11 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
     private var mode = 0
     private var languageOverride: String?
     private var applying = false
+    private var appliedColorScheme: NSAppearance.Name?
+    #if DEBUG
+    private(set) var highlightPassCount = 0
+    private(set) var previewUpdateCount = 0
+    #endif
     private var observers: [NSObjectProtocol] = []
     private var language: String { languageOverride ?? document?.fileURL?.pathExtension.lowercased() ?? "txt" }
     private var markdown: Bool { ["md", "markdown"].contains(language) }
@@ -54,7 +59,10 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
     override func loadView() {
         let root = MeadowView(); view = root
         root.appearanceChanged = { [weak self] in
-            DispatchQueue.main.async { self?.applyColors(); self?.highlight(); self?.updatePreview() }
+            DispatchQueue.main.async {
+                guard let self, self.appliedColorScheme != self.view.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) else { return }
+                self.applyColors(); self.highlight(); self.updatePreview()
+            }
         }
         modeControl.target = self; modeControl.action = #selector(changeMode(_:)); modeControl.selectedSegment = 0
         modeControl.controlSize = .small
@@ -117,7 +125,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
             status.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10), status.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10), status.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4), status.heightAnchor.constraint(equalToConstant: 16)])
         reloadContent(); applyPreferences(); setMode(0)
     }
-    override func viewDidAppear() { super.viewDidAppear(); applyPreferences(); configureWrap(); refreshChrome() }
+    override func viewDidAppear() { super.viewDidAppear(); configureWrap() }
     func installToolbar(on window: NSWindow) {
         let toolbar = NSToolbar(identifier: "BudNote.compactToolbar.\(UUID().uuidString)")
         toolbar.delegate = self; toolbar.displayMode = .iconOnly; toolbar.sizeMode = .small
@@ -134,7 +142,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         toolbar?.delegate = self
         if let item = toolbar?.items.first(where: { $0.itemIdentifier == Self.tabsID }) { item.view = tabsView }
         if let item = toolbar?.items.first(where: { $0.itemIdentifier == Self.modeID }) { item.view = modeControl }
-        refreshChrome(); applyPreferences()
+        applyColors()
     }
     func restoreFocus() { view.window?.makeFirstResponder(mode == 2 ? webView : textView) }
     func refreshChrome() {
@@ -185,6 +193,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         applyColors(); ruler.updateLines(); scrollView.tile(); configureWrap(); highlight(); updatePreview()
     }
     private func applyColors() {
+        appliedColorScheme = view.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua])
         textView.backgroundColor = Palette.background; textView.textColor = .textColor; textView.insertionPointColor = Palette.accent
         scrollView.backgroundColor = Palette.background
         view.needsDisplay = true
@@ -243,6 +252,9 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         status.stringValue = "第 \(line + 1) 行，\(column) 列    ·    \(textView.string.count) 字符    ·    \(document?.codec.name ?? "UTF-8")    ·    \(endings)\(limited)"
     }
     private func highlight() {
+        #if DEBUG
+        highlightPassCount += 1
+        #endif
         guard let manager = textView.layoutManager else { return }
         let range = NSRange(location: 0, length: (textView.string as NSString).length)
         manager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: range)
@@ -263,6 +275,9 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
     }
     private func updatePreview() {
         guard isViewLoaded, markdown, mode != 0 else { return }
+        #if DEBUG
+        previewUpdateCount += 1
+        #endif
         let source = (textView.string as NSString).length <= 1_000_000 ? textView.string : "# 文件较大\n请切换到编辑模式查看全文。"
         if !previewReady {
             if !webView.isLoading { webView.loadHTMLString(Markdown.page(source, fontSize: Preferences.shared.fontSize + 1), baseURL: nil) }
@@ -302,6 +317,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
     #if DEBUG
     var markdownControlsVisible: Bool { toolbar?.items.contains { $0.itemIdentifier == Self.modeID } == true }
     var displayedTabCount: Int { tabsView.tabCount }
+    var tabViewIdentities: [ObjectIdentifier] { tabsView.tabViewIdentities }
     var tabContentHeight: CGFloat { tabsView.contentSize.height }
     var tabViewportWidth: CGFloat { tabsView.frame.width }
     var tabContentWidth: CGFloat { tabsView.documentView?.frame.width ?? 0 }
