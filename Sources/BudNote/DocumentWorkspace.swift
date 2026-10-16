@@ -71,6 +71,7 @@ final class DocumentWorkspace: NSObject {
                 selectedController = incoming
                 incomingEditor.restoreFocus()
                 host.contentView?.layoutSubtreeIfNeeded()
+                incomingEditor.syncLayout()
                 // AppKit paints the completed swap at the next event flush;
                 // forcing a full-window repaint here blocks the tab click.
             }

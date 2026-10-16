@@ -30,9 +30,13 @@ func runSmokeTests() throws {
     controller.addDocument(document)
     document.makeWindowControllers()
     guard let editor = document.editor else { throw NSError(domain: "BudNoteSmoke", code: 2) }
-    try require(editor.textView.string == original, "Opening changed line endings")
+    try require(editor.textView.layoutManager != nil && editor.textView.textContainer != nil && editor.textView.textStorage != nil, "TextKit 1 layoutManager/textStorage missing")
+    RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+    try require(editor.textView.textStorage != nil && editor.textView.string == original, "Opening changed line endings or lost textStorage after autoreleasepool drain")
     try require(try document.data(ofType: "public.plain-text") == Data(original.utf8), "Document roundtrip changed bytes")
     guard let window = document.windowControllers.first?.window else { throw NSError(domain: "BudNoteSmoke", code: 4) }
+    window.contentView?.layoutSubtreeIfNeeded()
+    try require(editor.textView.frame.width > 500 && (editor.textView.textContainer?.containerSize.width ?? 0) > 500, "Editor text container width was collapsed: frame=\(editor.textView.frame), container=\(String(describing: editor.textView.textContainer?.containerSize))")
     try require(window.toolbarStyle == .unifiedCompact && window.titleVisibility == .hidden, "Titlebar is not a single compact toolbar row")
     for type in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
         try require(window.standardWindowButton(type)?.isHidden == false, "Missing native window button")
@@ -332,7 +336,44 @@ func runSmokeTests() throws {
     try require(operationDone && operationError == nil, "Move failed: \(String(describing: operationError))")
     try require(document.fileURL == moved && !FileManager.default.fileExists(atPath: copy.path), "Move did not update file location")
     try require(try Data(contentsOf: moved) == chosenCodec.encode(document.content), "Move lost pending edits")
+    // Rename file in place and verify File menu placement + language switching.
+    let menuDelegate = AppDelegate()
+    menuDelegate.buildMenu()
+    if let fileSubmenu = NSApp.mainMenu?.items.dropFirst().first?.submenu {
+        let saveAsIdx = fileSubmenu.items.firstIndex { $0.action == #selector(TextDocument.saveAsWithOptions(_:)) }
+        let renameIdx = fileSubmenu.items.firstIndex { $0.action == #selector(TextDocument.renameDocumentItem(_:)) }
+        try require(saveAsIdx != nil && renameIdx == saveAsIdx! + 1, "Rename item is not immediately below Save As in File menu")
+    } else {
+        throw NSError(domain: "BudNoteSmoke", code: 9, userInfo: [NSLocalizedDescriptionKey: "Missing File menu"])
+    }
+    view.insertText("重命名前编辑", replacementRange: NSRange(location: 0, length: 0)); view.breakUndoCoalescing()
+    RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+    let renamedURL = folder.appendingPathComponent("重命名文件.md")
+    operationDone = false; operationError = nil
+    document.renameFile(to: "重命名文件.md") { error in operationError = error; operationDone = true }
+    let renameDeadline = Date().addingTimeInterval(10)
+    while !operationDone && Date() < renameDeadline { RunLoop.current.run(until: Date().addingTimeInterval(0.05)) }
+    try require(operationDone && operationError == nil, "Rename failed: \(String(describing: operationError))")
+    try require(document.fileURL == renamedURL && !FileManager.default.fileExists(atPath: moved.path), "Rename did not update file location")
+    try require(try Data(contentsOf: renamedURL) == chosenCodec.encode(document.content), "Rename lost pending edits")
+    try require(editor.markdownControlsVisible, "Renaming to .md did not enable Markdown controls")
+    operationDone = false; operationError = nil
+    document.renameFile(to: "bad/name.md") { error in operationError = error; operationDone = true }
+    try require(operationDone && operationError != nil && document.fileURL == renamedURL, "Invalid rename name was not rejected")
+    // Verify language switch (Simplified Chinese <-> English)
+    let settingsController = SettingsController()
+    Preferences.shared.language = 1
+    menuDelegate.buildMenu()
+    RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+    try require(NSApp.mainMenu?.items.dropFirst().first?.title == "File", "Main menu did not switch to English")
+    try require(settingsController.window?.title == "BudNote Settings", "Settings window did not switch to English")
+    try require(editor.searchBar.query.placeholderString == "Find", "Find bar did not switch to English")
+    Preferences.shared.language = 0
+    menuDelegate.buildMenu()
+    RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+    try require(NSApp.mainMenu?.items.dropFirst().first?.title == "文件", "Main menu did not switch back to Simplified Chinese")
+    try require(settingsController.window?.title == "BudNote 设置", "Settings window did not switch back to Simplified Chinese")
     document.close()
-    print("PASS: file type registration, document open/save, CRLF preservation, NSTextView editing, undo/redo, WebKit Markdown live preview, reading/editing focus, compact toolbar, native window controls, theme switching, conditional Markdown controls, file tabs, About project link, first-click split geometry, larger find/replace, replacement undo, Save As encoding and error recovery, move with pending edits, persistent host document ownership, closing active tabs, 80-percent tab width, overflow scrolling and Command-wheel font zoom, large-font line-number clipping, unwrapped scrollbar separation, stable Markdown wheel scrolling and source-mapped preview synchronization")
+    print("PASS: file type registration, document open/save, CRLF preservation, NSTextView editing, undo/redo, WebKit Markdown live preview, reading/editing focus, compact toolbar, native window controls, theme switching, conditional Markdown controls, file tabs, About project link, first-click split geometry, larger find/replace, replacement undo, Save As encoding and error recovery, move and rename with pending edits, zh-Hans/en language switching, persistent host document ownership, closing active tabs, 80-percent tab width, overflow scrolling and Command-wheel font zoom, large-font line-number clipping, unwrapped scrollbar separation, stable Markdown wheel scrolling and source-mapped preview synchronization")
 }
 #endif

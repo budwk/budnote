@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BudNote 隐私政策 | Privacy Policy</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <style>
+    :root {
+      --bg-primary: #fbfdf9;
+      --bg-secondary: #f2f7f3;
+      --bg-card: #ffffff;
+      --text-primary: #18241e;
+      --text-secondary: #4a5d52;
+      --text-muted: #768b7f;
+      --brand: #265442;
+      --brand-surface: #e6f2ea;
+      --border: #dce8e0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #141a17;
+        --bg-secondary: #1b231f;
+        --bg-card: #202a25;
+        --text-primary: #eef5f0;
+        --text-secondary: #b0c2b7;
+        --text-muted: #7b9084;
+        --brand: #7ec493;
+        --brand-surface: #24382e;
+        --border: #2c3a33;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.7;
+    }
+    html[data-lang="zh"] [lang="en"] { display: none !important; }
+    html[data-lang="en"] [lang="zh"] { display: none !important; }
+    a { color: var(--brand); text-decoration: none; }
+    .container { max-width: 820px; margin: 0 auto; padding: 48px 24px; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 36px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.2rem; color: var(--text-primary); }
+    .brand img { width: 32px; height: 32px; border-radius: 7px; }
+    .lang-switch { display: inline-flex; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 999px; padding: 3px; }
+    .lang-btn { border: none; background: transparent; color: var(--text-secondary); font-size: 0.82rem; font-weight: 600; padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+    .lang-btn.active { background: var(--brand); color: #fff; }
+    @media (prefers-color-scheme: dark) { .lang-btn.active { color: #141a17; } }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 40px; }
+    h1 { font-size: 2rem; margin-bottom: 12px; }
+    h2 { font-size: 1.15rem; margin: 24px 0 8px; }
+    p, ul { color: var(--text-secondary); margin-bottom: 14px; font-size: 0.96rem; }
+    ul { padding-left: 20px; }
+    footer { margin-top: 36px; text-align: center; font-size: 0.86rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <a href="index.html" class="brand">
+        <img src="assets/icon.png" alt="BudNote">
+        <span>BudNote</span>
+      </a>
+      <div class="lang-switch">
+        <button type="button" class="lang-btn active" id="btn-zh" onclick="setLanguage('zh')">中文</button>
+        <button type="button" class="lang-btn" id="btn-en" onclick="setLanguage('en')">EN</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div lang="zh">
+        <h1>BudNote 隐私政策</h1>
+        <p><strong>生效日期：2026 年 10 月 16 日</strong></p>
+        <p>感谢您使用 <strong>BudNote</strong>（Bundle ID：<code>com.budwk.app.budnote</code>）。BudNote 是一款运行在 macOS 上的本地原生纯文本与 Markdown 编辑器。我们高度重视您的隐私保护。</p>
+        <h2>1. 零数据收集承诺</h2>
+        <p>BudNote 不会收集、上传、存储或分享您的任何个人身份信息、设备信息、使用统计数据、崩溃日志或文档内容。应用内无任何第三方统计或广告 SDK。</p>
+        <h2>2. 本地文件与沙盒安全</h2>
+        <p>BudNote 严格在 macOS App Sandbox（应用沙盒）内运行，仅访问您通过“打开”、“保存”、“另存为”、“移到”或拖拽操作主动授权的本地文件。您的所有文稿均保存在您自己的设备本地。</p>
+        <h2>3. 网络权限说明</h2>
+        <p>文本编辑、代码高亮与 Markdown 渲染完全离线完成。仅当您主动点击文档内的外部链接（<code>http</code> / <code>https</code> / <code>mailto</code>）或“关于”窗口中的项目主页时，系统才会调用默认浏览器打开。</p>
+        <h2>4. 联系我们</h2>
+        <p>如有任何关于隐私政策的疑问，请联系：<a href="mailto:wizzer@qq.com">wizzer@qq.com</a>。</p>
+      </div>
+
+      <div lang="en">
+        <h1>BudNote Privacy Policy</h1>
+        <p><strong>Effective Date: October 16, 2026</strong></p>
+        <p>Thank you for choosing <strong>BudNote</strong> (Bundle ID: <code>com.budwk.app.budnote</code>). BudNote is a native macOS plain text and Markdown editor designed with privacy at its core.</p>
+        <h2>1. Zero Data Collection</h2>
+        <p>BudNote does not collect, transmit, store, or share any personal information, device identifiers, analytics, telemetry, or document content. No third-party tracking or advertising SDKs are included.</p>
+        <h2>2. Local File Access &amp; App Sandbox</h2>
+        <p>BudNote runs strictly within the macOS App Sandbox and only accesses local files that you explicitly open or save via macOS file panels or Finder actions. All documents remain on your Mac.</p>
+        <h2>3. Network Usage</h2>
+        <p>All editing, syntax highlighting, and Markdown rendering happen 100% offline. External links are only opened in your system browser when you explicitly click on them.</p>
+        <h2>4. Contact Us</h2>
+        <p>If you have any questions regarding this Privacy Policy, please contact us at <a href="mailto:wizzer@qq.com">wizzer@qq.com</a>.</p>
+      </div>
+    </div>
+
+    <footer>
+      <p>
+        <a href="index.html"><span lang="zh">返回首页</span><span lang="en">Back to Home</span></a> ·
+        <a href="mailto:wizzer@qq.com">wizzer@qq.com</a> ·
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">皖ICP备15001937号-4</a>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    function setLanguage(lang) {
+      document.documentElement.setAttribute('data-lang', lang);
+      document.getElementById('btn-zh').classList.toggle('active', lang === 'zh');
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('lang') === 'en') setLanguage('en');
+  </script>
+</body>
+</html>

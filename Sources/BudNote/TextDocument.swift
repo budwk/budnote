@@ -27,7 +27,16 @@ final class TextDocument: NSDocument {
     }
     override class var autosavesInPlace: Bool { true }
     override class var preservesVersions: Bool { true }
-    override var fileURL: URL? { didSet { editor?.fileDidChange() } }
+    override var fileURL: URL? {
+        didSet {
+            for wc in windowControllers {
+                wc.synchronizeWindowTitleWithDocumentName()
+                wc.window?.representedURL = fileURL
+            }
+            editor?.fileDidChange()
+            NotificationCenter.default.post(name: .documentTabsChanged, object: nil)
+        }
+    }
     override func read(from data: Data, ofType typeName: String) throws {
         (content, codec) = try TextCodec.decode(data)
         editor?.reloadContent()
@@ -75,10 +84,10 @@ final class TextDocument: NSDocument {
     @objc func saveAsWithOptions(_ sender: Any?) {
         guard !fileOperationInProgress else { return }
         let panel = NSSavePanel()
-        panel.title = "另存为"; panel.prompt = "保存"
+        panel.title = tr("另存为", "Save As"); panel.prompt = tr("保存", "Save")
         panel.allowedContentTypes = []; panel.allowsOtherFileTypes = true
         panel.canCreateDirectories = true; panel.isExtensionHidden = false
-        panel.nameFieldStringValue = fileURL?.lastPathComponent ?? "未命名.txt"
+        panel.nameFieldStringValue = fileURL?.lastPathComponent ?? tr("未命名.txt", "Untitled.txt")
         panel.directoryURL = fileURL?.deletingLastPathComponent()
         let options = SaveOptionsView(panel: panel, codec: codec)
         panel.accessoryView = options
@@ -90,6 +99,60 @@ final class TextDocument: NSDocument {
         }
         if let window = windowControllers.first?.window { panel.beginSheetModal(for: window, completionHandler: finish) }
         else { panel.begin(completionHandler: finish) }
+    }
+    override func rename(_ sender: Any?) { renameDocumentItem(sender) }
+    @objc func renameDocumentItem(_ sender: Any?) {
+        guard !fileOperationInProgress else { return }
+        guard let current = fileURL else { saveAsWithOptions(sender); return }
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = tr("重命名文件", "Rename File")
+        alert.informativeText = tr("输入新的文件名称：", "Enter a new file name:")
+        alert.addButton(withTitle: tr("重命名", "Rename"))
+        alert.addButton(withTitle: tr("取消", "Cancel"))
+        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 280, height: 24))
+        input.font = .systemFont(ofSize: 13)
+        input.stringValue = current.lastPathComponent
+        alert.accessoryView = input
+        alert.window.initialFirstResponder = input
+        let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard let self, response == .alertFirstButtonReturn else { return }
+            self.renameFile(to: input.stringValue) { error in
+                if let error { self.presentError(error) }
+            }
+        }
+        if let window = windowControllers.first?.window {
+            alert.beginSheetModal(for: window, completionHandler: finish)
+            DispatchQueue.main.async {
+                let nsName = current.lastPathComponent as NSString
+                let stem = (nsName.deletingPathExtension as NSString).length
+                input.currentEditor()?.selectedRange = NSRange(location: 0, length: stem > 0 ? stem : nsName.length)
+            }
+        } else {
+            finish(alert.runModal())
+        }
+    }
+    func renameFile(to newName: String, completion: @escaping (Error?) -> Void) {
+        guard !fileOperationInProgress, let current = fileURL else {
+            completion(NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError))
+            return
+        }
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != ".", trimmed != "..", !trimmed.contains("/"), !trimmed.contains(":") else {
+            completion(NSError(domain: NSCocoaErrorDomain, code: NSFileWriteInvalidFileNameError, userInfo: [
+                NSLocalizedDescriptionKey: tr("文件名称无效，请勿为空或包含“/”与“:”。", "Invalid file name. Do not leave it empty or include \"/\" or \":\".")
+            ]))
+            return
+        }
+        let destination = current.deletingLastPathComponent().appendingPathComponent(trimmed)
+        guard destination != current else { completion(nil); return }
+        if FileManager.default.fileExists(atPath: destination.path) {
+            completion(NSError(domain: NSCocoaErrorDomain, code: NSFileWriteFileExistsError, userInfo: [
+                NSLocalizedDescriptionKey: tr("当前文件夹已存在同名文件，请使用其他名称。", "A file with this name already exists in the current folder. Please choose another name.")
+            ]))
+            return
+        }
+        moveFile(to: destination, completion: completion)
     }
     // NSDocument owns the safe write, URL update and change-count bookkeeping.
     func saveCopy(to url: URL, codec selectedCodec: TextCodec, completion: @escaping (Error?) -> Void) {
@@ -110,7 +173,9 @@ final class TextDocument: NSDocument {
         guard !fileOperationInProgress else { return }
         guard let current = fileURL else { saveAs(sender); return }
         let panel = NSOpenPanel()
-        panel.title = "移到"; panel.message = "选择目标文件夹，保留当前文件名称。"; panel.prompt = "移到此处"
+        panel.title = tr("移到", "Move To")
+        panel.message = tr("选择目标文件夹，保留当前文件名称。", "Choose a destination folder while keeping the current file name.")
+        panel.prompt = tr("移到此处", "Move Here")
         panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false; panel.directoryURL = current.deletingLastPathComponent()
         let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
@@ -119,7 +184,7 @@ final class TextDocument: NSDocument {
             guard destination != current else { return }
             // Leave existing files untouched; choosing another folder is always reversible.
             if FileManager.default.fileExists(atPath: destination.path) {
-                self.presentError(NSError(domain: NSCocoaErrorDomain, code: NSFileWriteFileExistsError, userInfo: [NSLocalizedDescriptionKey: "目标文件夹已存在同名文件，请选择其他位置或使用“另存为”。"]))
+                self.presentError(NSError(domain: NSCocoaErrorDomain, code: NSFileWriteFileExistsError, userInfo: [NSLocalizedDescriptionKey: tr("目标文件夹已存在同名文件，请选择其他位置或使用“另存为”。", "A file with the same name already exists in the destination folder. Choose another location or use Save As.")]))
                 return
             }
             self.moveFile(to: destination) { error in if let error { self.presentError(error) } }

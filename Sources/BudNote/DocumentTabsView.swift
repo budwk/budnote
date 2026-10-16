@@ -21,9 +21,16 @@ final class DocumentTabsView: NSScrollView {
         NSLayoutConstraint.activate([heightAnchor.constraint(equalToConstant: 28), widthConstraint])
         setContentHuggingPriority(.defaultLow, for: .horizontal)
         setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        setAccessibilityLabel("文件标签")
+        updateLocalization()
     }
     required init?(coder: NSCoder) { fatalError() }
+    func updateLocalization() {
+        toolTip = tr(
+            "标签较多时，可用触控板左右滑动或在此处滚动鼠标滚轮。",
+            "Scroll horizontally with trackpad or mouse wheel when many tabs are open."
+        )
+        setAccessibilityLabel(tr("文件标签", "File Tabs"))
+    }
     #if DEBUG
     var tabTitles: [String] { stack.arrangedSubviews.compactMap { ($0.subviews.first as? NSButton)?.title } }
     var tabCount: Int { stack.arrangedSubviews.count }
@@ -46,7 +53,7 @@ final class DocumentTabsView: NSScrollView {
     func refresh(for window: NSWindow) {
         let windows = DocumentWorkspace.shared.windows
         let current = windows.contains(window) ? windows : [window]
-        let next = current.map { "\(ObjectIdentifier($0.windowController ?? $0)):\($0.title):\($0.budnoteIsEdited):\($0.representedURL?.absoluteString ?? "")" }.joined(separator: "|")
+        let next = "\(Preferences.shared.language)|" + current.map { "\(ObjectIdentifier($0.windowController ?? $0)):\($0.title):\($0.budnoteIsEdited):\($0.representedURL?.absoluteString ?? "")" }.joined(separator: "|")
         let nextSelection = ObjectIdentifier(window.windowController ?? window)
         guard next != signature || selection != nextSelection else { return }
         let rebuild = next != signature
@@ -84,17 +91,18 @@ private final class FileTabView: NSView {
     private let button: NSButton
     init(window: NSWindow, selected: Bool) {
         tabController = window.windowController as? DocumentWindowController; self.selected = selected
-        let name = window.title.isEmpty ? "未命名" : window.title
-        button = NSButton(title: name + (window.budnoteIsEdited ? " - 已编辑" : ""), target: nil, action: #selector(selectTab(_:)))
+        let name = window.title.isEmpty ? tr("未命名", "Untitled") : window.title
+        button = NSButton(title: name + (window.budnoteIsEdited ? tr(" - 已编辑", " - Edited") : ""), target: nil, action: #selector(selectTab(_:)))
         super.init(frame: .zero)
         button.target = self
         button.isBordered = false; button.font = .systemFont(ofSize: 12, weight: selected ? .medium : .regular)
         button.contentTintColor = selected ? .labelColor : .secondaryLabelColor
         button.lineBreakMode = .byTruncatingMiddle; button.toolTip = window.representedURL?.path ?? name
-        button.setAccessibilityLabel(button.title); button.setAccessibilityValue(selected ? "当前标签" : "")
-        let close = NSButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: "关闭 \(name)")!, target: self, action: #selector(closeTab(_:)))
+        button.setAccessibilityLabel(button.title); button.setAccessibilityValue(selected ? tr("当前标签", "Active tab") : "")
+        let closeTip = tr("关闭 \(name)", "Close \(name)")
+        let close = NSButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: closeTip)!, target: self, action: #selector(closeTab(_:)))
         close.isBordered = false; close.imageScaling = .scaleProportionallyDown; close.contentTintColor = .secondaryLabelColor
-        close.toolTip = "关闭 \(name)"; close.setAccessibilityLabel("关闭 \(name)")
+        close.toolTip = closeTip; close.setAccessibilityLabel(closeTip)
         for child in [button, close] { child.translatesAutoresizingMaskIntoConstraints = false; addSubview(child) }
         let width = min(280, max(110, (button.title as NSString).size(withAttributes: [.font: button.font!]).width + 38))
         NSLayoutConstraint.activate([
@@ -109,7 +117,7 @@ private final class FileTabView: NSView {
         selected = active
         button.font = .systemFont(ofSize: 12, weight: active ? .medium : .regular)
         button.contentTintColor = active ? .labelColor : .secondaryLabelColor
-        button.setAccessibilityValue(active ? "当前标签" : "")
+        button.setAccessibilityValue(active ? tr("当前标签", "Active tab") : "")
         needsDisplay = true
     }
     override func draw(_ dirtyRect: NSRect) {

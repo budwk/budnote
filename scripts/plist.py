@@ -13,11 +13,15 @@ document = {
 }
 info = {
     'CFBundleName': 'BudNote', 'CFBundleDisplayName': 'BudNote', 'CFBundleExecutable': 'BudNote',
-    'CFBundleIdentifier': 'com.budnote.editor', 'CFBundlePackageType': 'APPL',
+    'CFBundleIdentifier': 'com.budwk.app.budnote', 'CFBundlePackageType': 'APPL',
     'CFBundleShortVersionString': version, 'CFBundleVersion': version,
     'CFBundleIconFile': 'BudNote', 'LSMinimumSystemVersion': '12.0',
+    'LSApplicationCategoryType': 'public.app-category.productivity',
+    'ITSAppUsesNonExemptEncryption': False,
     'NSPrincipalClass': 'NSApplication', 'NSHighResolutionCapable': True,
+    'UIDesignRequiresCompatibility': True,
     'NSHumanReadableCopyright': '© 2026 BudNote', 'CFBundleDevelopmentRegion': 'zh_CN',
+    'CFBundleLocalizations': ['zh_CN', 'zh-Hans', 'en'],
     'CFBundleDocumentTypes': [document],
     'UTImportedTypeDeclarations': [{ 'UTTypeIdentifier': 'net.daringfireball.markdown',
         'UTTypeDescription': 'Markdown', 'UTTypeConformsTo': ['public.plain-text'],

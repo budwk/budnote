@@ -12,11 +12,13 @@ final class Preferences {
         #else
         defaults = .standard
         #endif
-        defaults.register(defaults: ["fontSize": 15.0, "wrap": true, "lineNumbers": true, "theme": 0]) }
+        defaults.register(defaults: ["fontSize": 15.0, "wrap": true, "lineNumbers": true, "theme": 0, "language": 0]) }
     var fontSize: Double { get { defaults.double(forKey: "fontSize") } set { defaults.set(min(40, max(10, newValue)), forKey: "fontSize"); notify() } }
     var wrap: Bool { get { defaults.bool(forKey: "wrap") } set { defaults.set(newValue, forKey: "wrap"); notify() } }
     var lineNumbers: Bool { get { defaults.bool(forKey: "lineNumbers") } set { defaults.set(newValue, forKey: "lineNumbers"); notify() } }
     var theme: Int { get { defaults.integer(forKey: "theme") } set { defaults.set(newValue, forKey: "theme"); notify() } }
+    var language: Int { get { defaults.integer(forKey: "language") } set { defaults.set(newValue, forKey: "language"); notify() } }
+    var isEnglish: Bool { language == 1 }
     func applyAppearance() {
         let appearance = theme == 1 ? NSAppearance(named: .aqua) : theme == 2 ? NSAppearance(named: .darkAqua) : nil
         NSApp.appearance = appearance
@@ -25,6 +27,7 @@ final class Preferences {
     }
     private func notify() { applyAppearance(); NotificationCenter.default.post(name: .preferencesChanged, object: nil) }
 }
+func tr(_ zh: String, _ en: String) -> String { Preferences.shared.isEnglish ? en : zh }
 enum Palette {
     static let background = NSColor(name: "MeadowBackground") { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua

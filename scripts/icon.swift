@@ -4,8 +4,21 @@ let sizes = [(16,1),(16,2),(32,1),(32,2),(128,1),(128,2),(256,1),(256,2),(512,1)
 try FileManager.default.createDirectory(atPath: destination, withIntermediateDirectories: true)
 for (size, scale) in sizes {
     let pixels = size * scale
-    let image = NSImage(size: NSSize(width: pixels, height: pixels))
-    image.lockFocus()
+    let rep = NSBitmapImageRep(
+        bitmapDataPlanes: nil,
+        pixelsWide: pixels,
+        pixelsHigh: pixels,
+        bitsPerSample: 8,
+        samplesPerPixel: 4,
+        hasAlpha: true,
+        isPlanar: false,
+        colorSpaceName: .calibratedRGB,
+        bytesPerRow: 0,
+        bitsPerPixel: 0
+    )!
+    rep.size = NSSize(width: pixels, height: pixels)
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     let transform = NSAffineTransform(); transform.scale(by: CGFloat(pixels) / 1024); transform.concat()
     // A flat evergreen tile with one generous, ivory bud mark.
     NSColor(srgbRed: 0.15, green: 0.33, blue: 0.26, alpha: 1).setFill()
@@ -19,8 +32,7 @@ for (size, scale) in sizes {
     NSColor(srgbRed: 0.15, green: 0.33, blue: 0.26, alpha: 1).setStroke()
     let vein = NSBezierPath(); vein.lineWidth = 34; vein.lineCapStyle = .round
     vein.move(to: NSPoint(x: 285, y: 273)); vein.line(to: NSPoint(x: 584, y: 579)); vein.stroke()
-    image.unlockFocus()
-    let bitmap = NSBitmapImageRep(data: image.tiffRepresentation!)!
+    NSGraphicsContext.restoreGraphicsState()
     let suffix = scale == 2 ? "@2x" : ""
-    try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: destination + "/icon_\(size)x\(size)\(suffix).png"))
+    try rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: destination + "/icon_\(size)x\(size)\(suffix).png"))
 }

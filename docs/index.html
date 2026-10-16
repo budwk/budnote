@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BudNote — 轻巧、清新的 macOS 原生文本与 Markdown 编辑器 | Native macOS Text & Markdown Editor</title>
+  <meta name="description" content="BudNote 是一款使用 Swift 与 AppKit 构建的轻巧、清新的 macOS 原生纯文本与 Markdown 编辑器。无第三方依赖，支持多编码无损保存、双栏同步实时预览与代码语法高亮。">
+  <meta name="keywords" content="BudNote,macOS文本编辑器,Markdown编辑器,原生应用,Swift,AppKit,代码高亮,GB18030,UTF-8,记事本,Text Editor,Mac">
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <style>
+    :root {
+      --bg-primary: #fbfdf9;
+      --bg-secondary: #f2f7f3;
+      --bg-card: #ffffff;
+      --bg-dark: #1d2521;
+      --bg-dark-card: #242f2a;
+      --text-primary: #18241e;
+      --text-secondary: #4a5d52;
+      --text-muted: #768b7f;
+      --brand: #265442;
+      --brand-light: #38755b;
+      --brand-accent: #a1d4ab;
+      --brand-surface: #e6f2ea;
+      --border: #dce8e0;
+      --shadow-sm: 0 2px 8px rgba(24, 36, 30, 0.05);
+      --shadow-md: 0 12px 32px rgba(24, 36, 30, 0.08);
+      --shadow-lg: 0 24px 60px rgba(18, 30, 24, 0.14);
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --max-w: 1160px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #141a17;
+        --bg-secondary: #1b231f;
+        --bg-card: #202a25;
+        --text-primary: #eef5f0;
+        --text-secondary: #b0c2b7;
+        --text-muted: #7b9084;
+        --brand: #7ec493;
+        --brand-light: #9ad8ac;
+        --brand-accent: #38755b;
+        --brand-surface: #24382e;
+        --border: #2c3a33;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+        --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.35);
+        --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Bilingual visibility rules */
+    html[data-lang="zh"] [lang="en"] { display: none !important; }
+    html[data-lang="en"] [lang="zh"] { display: none !important; }
+
+    a {
+      color: var(--brand);
+      text-decoration: none;
+      transition: color 0.2s ease, opacity 0.2s ease;
+    }
+    a:hover {
+      color: var(--brand-light);
+    }
+
+    .container {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header & Navigation */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(251, 253, 249, 0.82);
+      backdrop-filter: saturate(180%) blur(16px);
+      -webkit-backdrop-filter: saturate(180%) blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    @media (prefers-color-scheme: dark) {
+      header {
+        background: rgba(20, 26, 23, 0.82);
+      }
+    }
+
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+    .brand img {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+
+    .lang-switch {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .lang-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .lang-btn.active {
+      background: var(--brand);
+      color: #fff;
+    }
+    @media (prefers-color-scheme: dark) {
+      .lang-btn.active {
+        color: #141a17;
+      }
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 84px 0 64px;
+      text-align: center;
+      background: radial-gradient(circle at 50% 0%, var(--brand-surface) 0%, transparent 65%);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      background: var(--brand-surface);
+      color: var(--brand);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .hero h1 {
+      font-size: clamp(2.25rem, 5vw, 3.6rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.18;
+      max-width: 860px;
+      margin: 0 auto 20px;
+    }
+
+    .hero p.subtitle {
+      font-size: clamp(1.05rem, 2vw, 1.28rem);
+      color: var(--text-secondary);
+      max-width: 720px;
+      margin: 0 auto 36px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 56px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 26px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+    .btn-primary {
+      background: #265442;
+      color: #ffffff !important;
+      box-shadow: 0 8px 20px rgba(38, 84, 66, 0.28);
+    }
+    .btn-primary:hover {
+      background: #2f6650;
+    }
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary) !important;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-secondary);
+    }
+
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 16px;
+    }
+    .showcase-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      box-shadow: var(--shadow-lg);
+      text-align: left;
+    }
+    .showcase-card img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      display: block;
+    }
+    .showcase-caption {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      text-align: center;
+      font-weight: 500;
+    }
+
+    /* Section Headers */
+    section {
+      padding: 84px 0;
+    }
+    section.alt-bg {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 56px;
+    }
+    .section-tag {
+      display: inline-block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--brand);
+      margin-bottom: 10px;
+    }
+    .section-header h2 {
+      font-size: clamp(1.75rem, 3.5vw, 2.4rem);
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+    .section-header p {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+    }
+
+    /* Features Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 30px 26px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .feature-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: var(--brand-surface);
+      color: var(--brand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      margin-bottom: 18px;
+    }
+
+    .feature-card h3 {
+      font-size: 1.18rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* Shortcuts & Tech Specs */
+    .specs-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    .card-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 32px;
+      box-shadow: var(--shadow-sm);
+    }
+    .card-panel h3 {
+      font-size: 1.3rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .shortcut-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .shortcut-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+    .shortcut-table tr:last-child {
+      border-bottom: none;
+    }
+    .shortcut-table td {
+      padding: 11px 4px;
+      font-size: 0.94rem;
+    }
+    .shortcut-table td:last-child {
+      text-align: right;
+    }
+    kbd {
+      display: inline-block;
+      padding: 3px 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      box-shadow: inset 0 -1px 0 var(--border);
+    }
+
+    .spec-list {
+      list-style: none;
+      display: grid;
+      gap: 16px;
+    }
+    .spec-list li {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .spec-list li:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .spec-label {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .spec-value {
+      font-size: 0.98rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    /* Privacy Policy Section */
+    .privacy-box {
+      max-width: 880px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 44px;
+      box-shadow: var(--shadow-md);
+    }
+    .privacy-highlights {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .privacy-pill {
+      background: var(--brand-surface);
+      border-radius: var(--radius-sm);
+      padding: 18px;
+      text-align: center;
+    }
+    .privacy-pill strong {
+      display: block;
+      font-size: 1.05rem;
+      color: var(--brand);
+      margin-bottom: 4px;
+    }
+    .privacy-pill span {
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+    }
+    .privacy-content h4 {
+      font-size: 1.08rem;
+      margin: 22px 0 8px;
+      color: var(--text-primary);
+    }
+    .privacy-content p, .privacy-content ul {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+    }
+    .privacy-content ul {
+      padding-left: 20px;
+    }
+    .privacy-content li {
+      margin-bottom: 6px;
+    }
+
+    /* Contact / Support Section */
+    .contact-card {
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 44px 32px;
+      box-shadow: var(--shadow-sm);
+    }
+    .contact-email {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      padding: 14px 28px;
+      border-radius: 12px;
+      background: var(--brand-surface);
+      color: var(--brand);
+      margin: 20px 0 12px;
+    }
+
+    /* Footer */
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      background: var(--bg-secondary);
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .footer-links a {
+      color: var(--text-secondary);
+    }
+    .footer-links a:hover {
+      color: var(--brand);
+    }
+
+    @media (max-width: 920px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .showcase-grid, .specs-grid { grid-template-columns: 1fr; }
+      .privacy-highlights { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .features-grid { grid-template-columns: 1fr; }
+      .privacy-box { padding: 28px 20px; }
+      .footer-inner { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header>
+    <div class="container nav-bar">
+      <a href="#" class="brand">
+        <img src="assets/icon.png" alt="BudNote Icon">
+        <span>BudNote</span>
+      </a>
+
+      <ul class="nav-links">
+        <li>
+          <a href="#features">
+            <span lang="zh">功能特性</span>
+            <span lang="en">Features</span>
+          </a>
+        </li>
+        <li>
+          <a href="#shortcuts">
+            <span lang="zh">快捷键与规格</span>
+            <span lang="en">Shortcuts & Specs</span>
+          </a>
+        </li>
+        <li>
+          <a href="#privacy">
+            <span lang="zh">隐私政策</span>
+            <span lang="en">Privacy Policy</span>
+          </a>
+        </li>
+        <li>
+          <a href="#contact">
+            <span lang="zh">联系与支持</span>
+            <span lang="en">Support</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="lang-switch" role="group" aria-label="Language switch">
+        <button type="button" class="lang-btn active" id="btn-zh" onclick="setLanguage('zh')">中文</button>
+        <button type="button" class="lang-btn" id="btn-en" onclick="setLanguage('en')">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <span>🌿</span>
+        <span lang="zh">纯正 macOS 原生应用 · Swift + AppKit 构建 · 零第三方依赖</span>
+        <span lang="en">100% Native macOS App · Built with Swift + AppKit · Zero Dependencies</span>
+      </div>
+
+      <h1>
+        <span lang="zh">轻巧、清新的<br>macOS 原生文本与 Markdown 编辑器</span>
+        <span lang="en">A Fast, Serene Native Text &amp; Markdown Editor for macOS</span>
+      </h1>
+
+      <p class="subtitle">
+        <span lang="zh">秒开启动，极低内存占用。支持多标签工作区、Markdown 双栏实时同步预览、常用代码语法高亮与多字符编码无损读写，随系统明暗主题自然切换。</span>
+        <span lang="en">Instant launch with a tiny memory footprint. Featuring compact document tabs, scroll-synced Markdown live preview, lightweight syntax highlighting, and lossless multi-encoding support.</span>
+      </p>
+
+      <div class="hero-actions">
+        <a href="#features" class="btn btn-primary">
+          <span lang="zh">探索功能特性</span>
+          <span lang="en">Explore Features</span>
+        </a>
+        <a href="https://github.com/budwk/budnote" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+          <span lang="zh">GitHub 开源仓库</span>
+          <span lang="en">GitHub Repository</span>
+        </a>
+        <a href="#privacy" class="btn btn-secondary">
+          <span lang="zh">隐私政策</span>
+          <span lang="en">Privacy Policy</span>
+        </a>
+      </div>
+
+      <div class="showcase-grid">
+        <div class="showcase-card">
+          <img src="assets/screenshot-editor.png" alt="BudNote 纯文本编辑界面 / Plain Text Editor">
+          <div class="showcase-caption">
+            <span lang="zh">清爽专注的纯文本与代码编辑体验，支持多标签与自适应明暗主题</span>
+            <span lang="en">Distraction-free plain text &amp; code editing with compact tabs and adaptive themes</span>
+          </div>
+        </div>
+        <div class="showcase-card">
+          <img src="assets/screenshot-markdown.png" alt="BudNote Markdown 实时预览 / Markdown Live Preview">
+          <div class="showcase-caption">
+            <span lang="zh">Markdown 双栏实时预览，按源码行位置平滑跟随滚动</span>
+            <span lang="en">Split-pane Markdown live preview with source-line synchronized scrolling</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="alt-bg">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">
+          <span lang="zh">核心特性</span>
+          <span lang="en">Core Features</span>
+        </span>
+        <h2>
+          <span lang="zh">为高效写作与日常代码编辑而设计</span>
+          <span lang="en">Crafted for Everyday Writing &amp; Code Inspection</span>
+        </h2>
+        <p>
+          <span lang="zh">不打包臃肿的浏览器内核或第三方运行时，完全依托 macOS 原生图形与排版引擎。</span>
+          <span lang="en">No bundled browser engines or heavy runtimes—powered entirely by native macOS frameworks.</span>
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>
+            <span lang="zh">纯粹原生，轻量疾速</span>
+            <span lang="en">100% Native &amp; Featherlight</span>
+          </h3>
+          <p>
+            <span lang="zh">基于 Swift、AppKit 与系统 WebKit 打造，无任何第三方库依赖。应用体积小巧，毫秒级响应，大文件也能保持流畅编辑。</span>
+            <span lang="en">Built purely with Swift, AppKit, and system WebKit with zero third-party dependencies. Instant startup and responsive editing even on large files.</span>
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card">
+          <div class="feature-icon">📖</div>
+          <h3>
+            <span lang="zh">Markdown 三模式与同步预览</span>
+            <span lang="en">Scroll-Synced Markdown Preview</span>
+          </h3>
+          <p>
+            <span lang="zh">支持“编辑”、“双栏实时预览”与“阅读”三种模式一键切换（⌘1 / ⌘2 / ⌘3）。右侧预览按源码行号精确跟随左侧滚动，支持标题、表格、任务列表、代码块与引用。</span>
+            <span lang="en">Switch effortlessly between Edit, Split Preview, and Read modes (⌘1 / ⌘2 / ⌘3). The live preview pane tracks your exact source line as you scroll.</span>
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div class="feature-icon">🗂️</div>
+          <h3>
+            <span lang="zh">紧凑单行多标签工作区</span>
+            <span lang="en">Compact Single-Row Tabs</span>
+          </h3>
+          <p>
+            <span lang="zh">融合标题栏的紧凑多标签设计，支持触控板与鼠标滚轮横向滑动、快捷键切换标签、关闭与重命名，切换标签不闪烁、不跳动全屏空间。</span>
+            <span lang="en">Unified compact titlebar tabs with horizontal trackpad/wheel scrolling and keyboard navigation. Switch documents smoothly without leaving fullscreen space.</span>
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>
+            <span lang="zh">轻量代码高亮与护眼主题</span>
+            <span lang="en">Syntax Highlighting &amp; Themes</span>
+          </h3>
+          <p>
+            <span lang="zh">支持 Swift、Python、Java、JS/TS、HTML/CSS、JSON、YAML、Shell、C/C++ 等关键词、字符串、注释与数字着色。内置清新的浅色与深色护眼配色。</span>
+            <span lang="en">Clean lexical highlighting for Swift, Python, Java, JS/TS, HTML/CSS, JSON, Shell, C/C++, and more. Pairs with soothing Meadow Light and Dark themes.</span>
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div class="feature-icon">🔤</div>
+          <h3>
+            <span lang="zh">多字符编码与换行无损保存</span>
+            <span lang="en">Lossless Multi-Encoding</span>
+          </h3>
+          <p>
+            <span lang="zh">全面支持 UTF-8、带 BOM 的 UTF-16/UTF-32 以及中文 GB18030 编码，严格保留原文件编码、BOM 标记及 LF / CRLF / CR 换行符，亦支持一键转换为 UTF-8。</span>
+            <span lang="en">Reads and writes UTF-8, UTF-16/UTF-32 (with BOM), and GB18030. Preserves original byte encodings, BOM headers, and LF/CRLF/CR line endings faithfully.</span>
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div class="feature-icon">🌐</div>
+          <h3>
+            <span lang="zh">中英双语界面与贴心细节</span>
+            <span lang="en">Bilingual UI &amp; Smart Controls</span>
+          </h3>
+          <p>
+            <span lang="zh">内置简体中文与英文界面实时切换；支持 ⌘ + 滚轮无级缩放字体（10–40 pt）、区分大小写增量查找与替换、文件重命名、移动及系统版本恢复。</span>
+            <span lang="en">Instant switch between Simplified Chinese and English UI. Includes Command + Scroll font zooming (10–40 pt), incremental Find &amp; Replace, Rename, and Move To.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Shortcuts & Technical Specs -->
+  <section id="shortcuts">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">
+          <span lang="zh">效率与规格</span>
+          <span lang="en">Productivity &amp; Specs</span>
+        </span>
+        <h2>
+          <span lang="zh">键盘优先的原生操作体验</span>
+          <span lang="en">Keyboard-First Native Workflow</span>
+        </h2>
+        <p>
+          <span lang="zh">遵循 macOS 人机界面指南（HIG），熟悉的快捷键让您双手无需离开键盘。</span>
+          <span lang="en">Follows Apple Human Interface Guidelines with intuitive, standard macOS shortcuts.</span>
+        </p>
+      </div>
+
+      <div class="specs-grid">
+        <div class="card-panel">
+          <h3>
+            <span>⌨️</span>
+            <span lang="zh">常用快捷键一览</span>
+            <span lang="en">Keyboard Shortcuts</span>
+          </h3>
+          <table class="shortcut-table">
+            <tbody>
+              <tr>
+                <td><span lang="zh">新建 / 打开 / 保存</span><span lang="en">New / Open / Save</span></td>
+                <td><kbd>⌘N</kbd> / <kbd>⌘O</kbd> / <kbd>⌘S</kbd></td>
+              </tr>
+              <tr>
+                <td><span lang="zh">另存为（含编码选择）</span><span lang="en">Save As (with Encoding)</span></td>
+                <td><kbd>⇧⌘S</kbd></td>
+              </tr>
+              <tr>
+                <td><span lang="zh">查找 / 查找并替换</span><span lang="en">Find / Find &amp; Replace</span></td>
+                <td><kbd>⌘F</kbd> / <kbd>⌥⌘F</kbd></td>
+              </tr>
+              <tr>
+                <td><span lang="zh">查找下一个 / 上一个</span><span lang="en">Find Next / Previous</span></td>
+                <td><kbd>⌘G</kbd> / <kbd>⇧⌘G</kbd></td>
+              </tr>
+              <tr>
+                <td><span lang="zh">编辑 / 实时预览 / 阅读模式</span><span lang="en">Edit / Split Preview / Read Mode</span></td>
+                <td><kbd>⌘1</kbd> / <kbd>⌘2</kbd> / <kbd>⌘3</kbd></td>
+              </tr>
+              <tr>
+                <td><span lang="zh">切换自动换行 / 显示行号</span><span lang="en">Toggle Word Wrap / Line Numbers</span></td>
+                <td><kbd>⌥⌘W</kbd> / <kbd>⌥⌘L</kbd></td>
+              </tr>
+              <tr>
+                <td><span lang="zh">增大 / 减小 / 重置字体大小</span><span lang="en">Increase / Decrease / Reset Font</span></td>
+                <td><kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd></td>
+              </tr>
+              <tr>
+                <td><span lang="zh">快速缩放字体</span><span lang="en">Quick Font Zoom</span></td>
+                <td><kbd>⌘</kbd> + <span lang="zh">鼠标滚轮</span><span lang="en">Mouse Wheel</span></td>
+              </tr>
+              <tr>
+                <td><span lang="zh">下一个 / 上一个文件标签</span><span lang="en">Next / Previous Document Tab</span></td>
+                <td><kbd>⌃Tab</kbd> / <kbd>⇧⌃Tab</kbd></td>
+              </tr>
+              <tr>
+                <td><span lang="zh">打开偏好设置</span><span lang="en">Open Settings</span></td>
+                <td><kbd>⌘,</kbd></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-panel">
+          <h3>
+            <span>🛠️</span>
+            <span lang="zh">技术规格</span>
+            <span lang="en">Technical Specifications</span>
+          </h3>
+          <ul class="spec-list">
+            <li>
+              <span class="spec-label"><span lang="zh">系统要求</span><span lang="en">System Requirements</span></span>
+              <span class="spec-value">macOS 12.0 Monterey <span lang="zh">及以上（原生支持 Apple Silicon 与 Intel）</span><span lang="en">or later (Universal for Apple Silicon &amp; Intel)</span></span>
+            </li>
+            <li>
+              <span class="spec-label"><span lang="zh">支持的文件扩展名</span><span lang="en">Supported File Formats</span></span>
+              <span class="spec-value">txt, md, markdown, html, htm, py, java, js, ts, json, css, xml, yaml, yml, toml, ini, cfg, conf, log, sh, zsh, c, h, cpp, hpp, swift</span>
+            </li>
+            <li>
+              <span class="spec-label"><span lang="zh">字符编码支持</span><span lang="en">Character Encodings</span></span>
+              <span class="spec-value">UTF-8, UTF-8 BOM, UTF-16 LE/BE, UTF-32 LE/BE, GB18030 (GBK/GB2312)</span>
+            </li>
+            <li>
+              <span class="spec-label"><span lang="zh">界面语言</span><span lang="en">Interface Languages</span></span>
+              <span class="spec-value"><span lang="zh">简体中文、English（可在设置内即时切换）</span><span lang="en">Simplified Chinese, English (instant in-app switch)</span></span>
+            </li>
+            <li>
+              <span class="spec-label"><span lang="zh">安全与沙盒</span><span lang="en">Security &amp; Sandbox</span></span>
+              <span class="spec-value"><span lang="zh">严格遵循 macOS App Sandbox 规范，仅访问用户主动授权打开或保存的文件</span><span lang="en">Runs inside macOS App Sandbox; accesses only user-selected files</span></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Privacy Policy -->
+  <section id="privacy" class="alt-bg">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">
+          <span lang="zh">隐私与安全</span>
+          <span lang="en">Privacy &amp; Security</span>
+        </span>
+        <h2>
+          <span lang="zh">隐私政策 (Privacy Policy)</span>
+          <span lang="en">Privacy Policy</span>
+        </h2>
+        <p>
+          <span lang="zh">您的文稿与创作完全属于您自己。BudNote 不收集、不存储、不上传任何个人数据。</span>
+          <span lang="en">Your documents belong solely to you. BudNote does not collect, store, or transmit any personal data.</span>
+        </p>
+      </div>
+
+      <div class="privacy-box">
+        <div class="privacy-highlights">
+          <div class="privacy-pill">
+            <strong>
+              <span lang="zh">零数据收集</span>
+              <span lang="en">Zero Data Collection</span>
+            </strong>
+            <span>
+              <span lang="zh">无统计埋点、无崩溃追踪、无账号体系</span>
+              <span lang="en">No analytics, no telemetry, no user accounts</span>
+            </span>
+          </div>
+          <div class="privacy-pill">
+            <strong>
+              <span lang="zh">100% 本地离线运行</span>
+              <span lang="en">100% Local Processing</span>
+            </strong>
+            <span>
+              <span lang="zh">所有编辑、高亮与 Markdown 渲染均在本地完成</span>
+              <span lang="en">All editing and rendering happen locally on your Mac</span>
+            </span>
+          </div>
+          <div class="privacy-pill">
+            <strong>
+              <span lang="zh">无第三方 SDK</span>
+              <span lang="en">No Third-Party SDKs</span>
+            </strong>
+            <span>
+              <span lang="zh">无广告组件、无外部脚本或云端同步服务</span>
+              <span lang="en">No ad networks, external scripts, or cloud trackers</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Chinese Privacy Content -->
+        <div class="privacy-content" lang="zh">
+          <p><strong>生效日期：2026 年 10 月 16 日</strong></p>
+          <p>感谢您使用 <strong>BudNote</strong>（Bundle ID：<code>com.budwk.app.budnote</code>）。我们深知文本与笔记内容的私密性，因此在设计 BudNote 之初便贯彻“本地优先、零隐私收集”的原则。</p>
+
+          <h4>1. 信息收集与使用</h4>
+          <p>BudNote <strong>不会收集、存储、共享或上传</strong>您的任何个人信息、设备标识符、使用习惯数据或文档内容。应用内不包含任何用户注册、登录或云端同步功能。</p>
+
+          <h4>2. 本地文件访问权限</h4>
+          <p>BudNote 运行于 macOS 应用沙盒（App Sandbox）环境中。应用仅在您通过“打开”面板、Finder 双击、拖拽文件到图标或“保存 / 另存为 / 移到 / 重命名”操作明确授权时，才会在本地读取或写入对应的文件。您的所有文档数据始终保存在您自己的 Mac 存储设备中。</p>
+
+          <h4>3. 网络连接与外部资源</h4>
+          <ul>
+            <li>BudNote 的核心文本编辑、语法高亮及 Markdown 实时预览完全在本地离线运行。</li>
+            <li>Markdown 预览使用非持久化（<code>nonPersistent</code>）的系统 WebKit 容器，禁止加载外部脚本或远程追踪器。</li>
+            <li>仅当您主动点击“关于”窗口中的项目链接或文档内的网页链接（<code>http://</code>、<code>https://</code>、<code>mailto:</code>）时，应用才会调用系统默认浏览器或邮件客户端打开该链接。</li>
+          </ul>
+
+          <h4>4. 偏好设置存储</h4>
+          <p>您对字体大小、明暗主题、自动换行、行号显示及界面语言的设置仅通过 macOS 系统的 <code>UserDefaults</code> 保存在您的本地设备中，不会上传至任何服务器。</p>
+
+          <h4>5. 隐私政策更新与联系方式</h4>
+          <p>如果本隐私政策发生任何变更，我们将在本页面同步更新。如您对隐私保护有任何疑问，欢迎发送邮件至：<a href="mailto:wizzer@qq.com">wizzer@qq.com</a>。</p>
+        </div>
+
+        <!-- English Privacy Content -->
+        <div class="privacy-content" lang="en">
+          <p><strong>Effective Date: October 16, 2026</strong></p>
+          <p>Thank you for using <strong>BudNote</strong> (Bundle ID: <code>com.budwk.app.budnote</code>). We respect your privacy and designed BudNote from the ground up with a strict local-first, zero-data-collection architecture.</p>
+
+          <h4>1. Data Collection and Usage</h4>
+          <p>BudNote <strong>does not collect, store, share, or transmit</strong> any personal information, device identifiers, usage analytics, crash telemetry, or document contents. The app requires no user account or sign-in.</p>
+
+          <h4>2. Local File Access</h4>
+          <p>BudNote runs inside the macOS App Sandbox. It only reads or writes files that you explicitly open or save via standard macOS file dialogs, Finder drag-and-drop, or "Open With" actions. All your documents remain strictly on your local storage device.</p>
+
+          <h4>3. Network Access &amp; External Links</h4>
+          <ul>
+            <li>All text editing, syntax highlighting, and Markdown live preview rendering are performed 100% offline on your Mac.</li>
+            <li>The Markdown preview uses a non-persistent system <code>WKWebView</code> data store and never loads remote scripts or tracking pixels.</li>
+            <li>External links (<code>http://</code>, <code>https://</code>, <code>mailto:</code>) are only opened in your default macOS browser or mail client when you explicitly click on them.</li>
+          </ul>
+
+          <h4>4. Local Preferences</h4>
+          <p>Your preferences (font size, theme, word wrap, line numbers, and interface language) are stored locally on your Mac using standard macOS <code>UserDefaults</code> and never leave your device.</p>
+
+          <h4>5. Contact Us</h4>
+          <p>If we make any updates to this Privacy Policy, we will post the revised version on this page. If you have any questions about privacy or data security, please contact us at <a href="mailto:wizzer@qq.com">wizzer@qq.com</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact & Support -->
+  <section id="contact">
+    <div class="container">
+      <div class="contact-card">
+        <span class="section-tag">
+          <span lang="zh">联系与技术支持</span>
+          <span lang="en">Contact &amp; Support</span>
+        </span>
+        <h2>
+          <span lang="zh">需要帮助或有任何建议？</span>
+          <span lang="en">Need Help or Have Feedback?</span>
+        </h2>
+        <p style="color: var(--text-secondary); margin-top: 8px;">
+          <span lang="zh">如果您在使用 BudNote 过程中遇到问题、发现 Bug 或有功能建议，欢迎随时通过电子邮件或 GitHub 与我们联系。</span>
+          <span lang="en">If you encounter any issues, find a bug, or have feature requests for BudNote, feel free to reach out via email or GitHub Issues.</span>
+        </p>
+
+        <div>
+          <a href="mailto:wizzer@qq.com" class="contact-email">
+            <span>✉️</span>
+            <span>wizzer@qq.com</span>
+          </a>
+        </div>
+
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 8px;">
+          <span lang="zh">开源项目地址：<a href="https://github.com/budwk/budnote" target="_blank" rel="noopener noreferrer">https://github.com/budwk/budnote</a></span>
+          <span lang="en">Open Source Repository: <a href="https://github.com/budwk/budnote" target="_blank" rel="noopener noreferrer">https://github.com/budwk/budnote</a></span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-inner">
+      <div>
+        <strong>BudNote</strong> ·
+        <span lang="zh">轻巧、清新的 macOS 原生文本编辑器</span>
+        <span lang="en">Lightweight Native macOS Text &amp; Markdown Editor</span>
+      </div>
+
+      <div class="footer-links">
+        <a href="#features"><span lang="zh">功能特性</span><span lang="en">Features</span></a>
+        <a href="#privacy"><span lang="zh">隐私政策</span><span lang="en">Privacy</span></a>
+        <a href="mailto:wizzer@qq.com">wizzer@qq.com</a>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">皖ICP备15001937号-4</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function setLanguage(lang) {
+      document.documentElement.setAttribute('data-lang', lang);
+      document.documentElement.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+      document.getElementById('btn-zh').classList.toggle('active', lang === 'zh');
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+      try { localStorage.setItem('budnote_site_lang', lang); } catch (e) {}
+    }
+
+    (function initLanguage() {
+      const params = new URLSearchParams(window.location.search);
+      const urlLang = params.get('lang');
+      if (urlLang === 'en' || urlLang === 'zh') {
+        setLanguage(urlLang);
+        return;
+      }
+      try {
+        const saved = localStorage.getItem('budnote_site_lang');
+        if (saved === 'en' || saved === 'zh') {
+          setLanguage(saved);
+          return;
+        }
+      } catch (e) {}
+      if (navigator.language && !navigator.language.toLowerCase().startsWith('zh')) {
+        setLanguage('en');
+      }
+    })();
+  </script>
+</body>
+</html>

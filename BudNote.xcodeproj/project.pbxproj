@@ -1,0 +1,546 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000010000000000000001 /* Markdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001 /* Markdown.swift */; };
+		A10000020000000000000001 /* Syntax.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000020000000000000001 /* Syntax.swift */; };
+		A10000030000000000000001 /* TextCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000030000000000000001 /* TextCodec.swift */; };
+		A10000040000000000000001 /* TextSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000040000000000000001 /* TextSearch.swift */; };
+		A10000050000000000000001 /* DocumentTabsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000050000000000000001 /* DocumentTabsView.swift */; };
+		A10000060000000000000001 /* DocumentWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000060000000000000001 /* DocumentWorkspace.swift */; };
+		A10000070000000000000001 /* EditorController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000070000000000000001 /* EditorController.swift */; };
+		A10000080000000000000001 /* FindReplaceBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000080000000000000001 /* FindReplaceBar.swift */; };
+		A10000090000000000000001 /* FontZoomScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000090000000000000001 /* FontZoomScrollView.swift */; };
+		A100000A0000000000000001 /* LineNumberRuler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000A0000000000000001 /* LineNumberRuler.swift */; };
+		A100000B0000000000000001 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000B0000000000000001 /* Preferences.swift */; };
+		A100000C0000000000000001 /* SaveOptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000C0000000000000001 /* SaveOptionsView.swift */; };
+		A100000D0000000000000001 /* SettingsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000D0000000000000001 /* SettingsController.swift */; };
+		A100000E0000000000000001 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000E0000000000000001 /* SmokeTests.swift */; };
+		A100000F0000000000000001 /* TextDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000F0000000000000001 /* TextDocument.swift */; };
+		A10000100000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000100000000000000001 /* main.swift */; };
+		A10000110000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000110000000000000001 /* Assets.xcassets */; };
+		A10000120000000000000001 /* libBudCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A30000010000000000000001 /* libBudCore.a */; };
+		A10000130000000000000001 /* BudCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000140000000000000001 /* BudCoreTests.swift */; };
+		A10000140000000000000001 /* libBudCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A30000010000000000000001 /* libBudCore.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A40000010000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000010000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000010000000000000001;
+			remoteInfo = BudCore;
+		};
+		A40000020000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000010000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000010000000000000001;
+			remoteInfo = BudCore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A20000010000000000000001 /* Markdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Markdown.swift; sourceTree = "<group>"; };
+		A20000020000000000000001 /* Syntax.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Syntax.swift; sourceTree = "<group>"; };
+		A20000030000000000000001 /* TextCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextCodec.swift; sourceTree = "<group>"; };
+		A20000040000000000000001 /* TextSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSearch.swift; sourceTree = "<group>"; };
+		A20000050000000000000001 /* DocumentTabsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTabsView.swift; sourceTree = "<group>"; };
+		A20000060000000000000001 /* DocumentWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentWorkspace.swift; sourceTree = "<group>"; };
+		A20000070000000000000001 /* EditorController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorController.swift; sourceTree = "<group>"; };
+		A20000080000000000000001 /* FindReplaceBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindReplaceBar.swift; sourceTree = "<group>"; };
+		A20000090000000000000001 /* FontZoomScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontZoomScrollView.swift; sourceTree = "<group>"; };
+		A200000A0000000000000001 /* LineNumberRuler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineNumberRuler.swift; sourceTree = "<group>"; };
+		A200000B0000000000000001 /* Preferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
+		A200000C0000000000000001 /* SaveOptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveOptionsView.swift; sourceTree = "<group>"; };
+		A200000D0000000000000001 /* SettingsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsController.swift; sourceTree = "<group>"; };
+		A200000E0000000000000001 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
+		A200000F0000000000000001 /* TextDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextDocument.swift; sourceTree = "<group>"; };
+		A20000100000000000000001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		A20000110000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20000120000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A20000130000000000000001 /* BudNote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BudNote.entitlements; sourceTree = "<group>"; };
+		A20000140000000000000001 /* BudCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudCoreTests.swift; sourceTree = "<group>"; };
+		A30000010000000000000001 /* libBudCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libBudCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		A30000020000000000000001 /* BudNote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BudNote.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A30000030000000000000001 /* BudCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BudCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A60000010000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A60000020000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000120000000000000001 /* libBudCore.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A60000030000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000140000000000000001 /* libBudCore.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A70000010000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				A70000020000000000000001 /* Sources */,
+				A70000050000000000000001 /* Resources */,
+				A70000060000000000000001 /* Tests */,
+				A70000080000000000000001 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A70000020000000000000001 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A70000030000000000000001 /* BudCore */,
+				A70000040000000000000001 /* BudNote */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		A70000030000000000000001 /* BudCore */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000001 /* Markdown.swift */,
+				A20000020000000000000001 /* Syntax.swift */,
+				A20000030000000000000001 /* TextCodec.swift */,
+				A20000040000000000000001 /* TextSearch.swift */,
+			);
+			path = BudCore;
+			sourceTree = "<group>";
+		};
+		A70000040000000000000001 /* BudNote */ = {
+			isa = PBXGroup;
+			children = (
+				A20000050000000000000001 /* DocumentTabsView.swift */,
+				A20000060000000000000001 /* DocumentWorkspace.swift */,
+				A20000070000000000000001 /* EditorController.swift */,
+				A20000080000000000000001 /* FindReplaceBar.swift */,
+				A20000090000000000000001 /* FontZoomScrollView.swift */,
+				A200000A0000000000000001 /* LineNumberRuler.swift */,
+				A200000B0000000000000001 /* Preferences.swift */,
+				A200000C0000000000000001 /* SaveOptionsView.swift */,
+				A200000D0000000000000001 /* SettingsController.swift */,
+				A200000E0000000000000001 /* SmokeTests.swift */,
+				A200000F0000000000000001 /* TextDocument.swift */,
+				A20000100000000000000001 /* main.swift */,
+			);
+			path = BudNote;
+			sourceTree = "<group>";
+		};
+		A70000050000000000000001 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A20000110000000000000001 /* Assets.xcassets */,
+				A20000120000000000000001 /* Info.plist */,
+				A20000130000000000000001 /* BudNote.entitlements */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A70000060000000000000001 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				A70000070000000000000001 /* BudCoreTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		A70000070000000000000001 /* BudCoreTests */ = {
+			isa = PBXGroup;
+			children = (
+				A20000140000000000000001 /* BudCoreTests.swift */,
+			);
+			path = BudCoreTests;
+			sourceTree = "<group>";
+		};
+		A70000080000000000000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A30000010000000000000001 /* libBudCore.a */,
+				A30000020000000000000001 /* BudNote.app */,
+				A30000030000000000000001 /* BudCoreTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A50000010000000000000001 /* BudCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A80000020000000000000001 /* Build configuration list for PBXNativeTarget "BudCore" */;
+			buildPhases = (
+				A90000010000000000000001 /* Sources */,
+				A60000010000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BudCore;
+			productName = BudCore;
+			productReference = A30000010000000000000001 /* libBudCore.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		A50000020000000000000001 /* BudNote */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A80000030000000000000001 /* Build configuration list for PBXNativeTarget "BudNote" */;
+			buildPhases = (
+				A90000020000000000000001 /* Sources */,
+				A60000020000000000000001 /* Frameworks */,
+				AA0000010000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AB0000010000000000000001 /* PBXTargetDependency */,
+			);
+			name = BudNote;
+			productName = BudNote;
+			productReference = A30000020000000000000001 /* BudNote.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A50000030000000000000001 /* BudCoreTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A80000040000000000000001 /* Build configuration list for PBXNativeTarget "BudCoreTests" */;
+			buildPhases = (
+				A90000030000000000000001 /* Sources */,
+				A60000030000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AB0000020000000000000001 /* PBXTargetDependency */,
+			);
+			name = BudCoreTests;
+			productName = BudCoreTests;
+			productReference = A30000030000000000000001 /* BudCoreTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A00000010000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A50000010000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					A50000020000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+						SystemCapabilities = {
+							com.apple.Sandbox = {
+								enabled = 1;
+							};
+						};
+					};
+					A50000030000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A80000010000000000000001 /* Build configuration list for PBXProject "BudNote" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = zh_CN;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				zh_CN,
+				"zh-Hans",
+				en,
+				Base,
+			);
+			mainGroup = A70000010000000000000001;
+			productRefGroup = A70000080000000000000001 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A50000010000000000000001 /* BudCore */,
+				A50000020000000000000001 /* BudNote */,
+				A50000030000000000000001 /* BudCoreTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA0000010000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000110000000000000001 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A90000010000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000010000000000000001 /* Markdown.swift in Sources */,
+				A10000020000000000000001 /* Syntax.swift in Sources */,
+				A10000030000000000000001 /* TextCodec.swift in Sources */,
+				A10000040000000000000001 /* TextSearch.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A90000020000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000050000000000000001 /* DocumentTabsView.swift in Sources */,
+				A10000060000000000000001 /* DocumentWorkspace.swift in Sources */,
+				A10000070000000000000001 /* EditorController.swift in Sources */,
+				A10000080000000000000001 /* FindReplaceBar.swift in Sources */,
+				A10000090000000000000001 /* FontZoomScrollView.swift in Sources */,
+				A100000A0000000000000001 /* LineNumberRuler.swift in Sources */,
+				A100000B0000000000000001 /* Preferences.swift in Sources */,
+				A100000C0000000000000001 /* SaveOptionsView.swift in Sources */,
+				A100000D0000000000000001 /* SettingsController.swift in Sources */,
+				A100000E0000000000000001 /* SmokeTests.swift in Sources */,
+				A100000F0000000000000001 /* TextDocument.swift in Sources */,
+				A10000100000000000000001 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A90000030000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000130000000000000001 /* BudCoreTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AB0000010000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000010000000000000001 /* BudCore */;
+			targetProxy = A40000010000000000000001 /* PBXContainerItemProxy */;
+		};
+		AB0000020000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000010000000000000001 /* BudCore */;
+			targetProxy = A40000020000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		AC0000010000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.0.9;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AC0000020000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.0.9;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		AC0000030000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEFINES_MODULE = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		AC0000040000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEFINES_MODULE = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		AC0000050000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/BudNote.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = DPBBH6KM6G;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = DPBBH6KM6G;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BudNote;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				OTHER_LDFLAGS = "-Wl,-platform_version,macos,12.0,12.0";
+				PRODUCT_BUNDLE_IDENTIFIER = com.budwk.app.budnote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+			};
+			name = Debug;
+		};
+		AC0000060000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/BudNote.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Distribution";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = DPBBH6KM6G;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BudNote;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				OTHER_LDFLAGS = "-Wl,-platform_version,macos,12.0,12.0";
+				PRODUCT_BUNDLE_IDENTIFIER = com.budwk.app.budnote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+			};
+			name = Release;
+		};
+		AC0000070000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.budwk.app.budnote.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		AC0000080000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.budwk.app.budnote.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A80000010000000000000001 /* Build configuration list for PBXProject "BudNote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AC0000010000000000000001 /* Debug */,
+				AC0000020000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A80000020000000000000001 /* Build configuration list for PBXNativeTarget "BudCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AC0000030000000000000001 /* Debug */,
+				AC0000040000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A80000030000000000000001 /* Build configuration list for PBXNativeTarget "BudNote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AC0000050000000000000001 /* Debug */,
+				AC0000060000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A80000040000000000000001 /* Build configuration list for PBXNativeTarget "BudCoreTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AC0000070000000000000001 /* Debug */,
+				AC0000080000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A00000010000000000000001 /* Project object */;
+}

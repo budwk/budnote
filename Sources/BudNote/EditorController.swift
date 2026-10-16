@@ -10,6 +10,16 @@ final class MeadowView: NSView {
     override func viewDidChangeEffectiveAppearance() { super.viewDidChangeEffectiveAppearance(); appearanceChanged?() }
 }
 final class PlainTextView: NSTextView {
+    private let backingStorage = NSTextStorage()
+    init() {
+        let layoutManager = NSLayoutManager()
+        backingStorage.addLayoutManager(layoutManager)
+        let container = NSTextContainer(containerSize: NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude))
+        container.widthTracksTextView = true
+        layoutManager.addTextContainer(container)
+        super.init(frame: .zero, textContainer: container)
+    }
+    required init?(coder: NSCoder) { fatalError() }
     override func paste(_ sender: Any?) { pasteAsPlainText(sender) }
 }
 final class EditorController: NSViewController, NSTextViewDelegate, WKNavigationDelegate, NSMenuItemValidation, NSToolbarDelegate {
@@ -68,11 +78,8 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         }
         modeControl.target = self; modeControl.action = #selector(changeMode(_:)); modeControl.selectedSegment = 0
         modeControl.controlSize = .small
-        modeControl.setAccessibilityLabel("Markdown 显示模式")
-        for (index, label) in ["编辑", "实时预览", "阅读"].enumerated() {
-            modeControl.setToolTip(label, forSegment: index); modeControl.setWidth(28, forSegment: index)
-        }
-        status.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular); status.textColor = .secondaryLabelColor
+        for index in 0..<3 { modeControl.setWidth(28, forSegment: index) }
+        status.font = .monospacedDigitSystemFont(ofSize: 11.5, weight: .regular); status.textColor = .secondaryLabelColor
         status.translatesAutoresizingMaskIntoConstraints = false
         splitView.isVertical = true; splitView.dividerStyle = .thin; splitView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.hasVerticalScroller = true; scrollView.hasHorizontalScroller = true; scrollView.autohidesScrollers = true
@@ -130,7 +137,16 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
             status.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10), status.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10), status.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4), status.heightAnchor.constraint(equalToConstant: 16)])
         reloadContent(); applyPreferences(); setMode(0)
     }
+    private var lastConfiguredWidth: CGFloat = -1
     override func viewDidAppear() { super.viewDidAppear(); configureWrap() }
+    override func viewDidLayout() {
+        super.viewDidLayout()
+        let w = scrollView.contentSize.width
+        if w > 0, abs(w - lastConfiguredWidth) > 0.5 {
+            lastConfiguredWidth = w
+            configureWrap()
+        }
+    }
     func installToolbar(on window: NSWindow) {
         let toolbar = NSToolbar(identifier: "BudNote.compactToolbar.\(UUID().uuidString)")
         toolbar.delegate = self; toolbar.displayMode = .iconOnly; toolbar.sizeMode = .small
@@ -150,6 +166,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         applyColors()
     }
     func restoreFocus() { view.window?.makeFirstResponder(mode == 2 ? webView : textView) }
+    func syncLayout() { configureWrap() }
     func refreshChrome() {
         guard let window = view.window else { return }
         tabsView.updateViewportWidth(window.frame.width, reservesMarkdownControls: markdown)
@@ -167,13 +184,13 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
     }
     func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier identifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
         let item = NSToolbarItem(itemIdentifier: identifier)
+        if #available(macOS 15.0, *) { item.isBordered = false }
         switch identifier {
         case Self.tabsID:
-            item.label = "文件标签"; item.view = tabsView
-
+            item.label = tr("文件标签", "File Tabs"); item.view = tabsView
             item.visibilityPriority = .high
         case Self.modeID:
-            item.label = "Markdown 显示模式"; item.view = modeControl
+            item.label = tr("Markdown 显示模式", "Markdown Mode"); item.view = modeControl
         default: return nil
         }
         return item
@@ -195,7 +212,19 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         textView.font = .monospacedSystemFont(ofSize: p.fontSize, weight: .regular)
         textView.typingAttributes = [.font: textView.font!, .foregroundColor: NSColor.textColor]
         scrollView.rulersVisible = p.lineNumbers
-        applyColors(); ruler.updateLines(); scrollView.tile(); configureWrap(); highlight(); updatePreview()
+        updateLocalization()
+        applyColors(); ruler.updateLines(); scrollView.tile(); configureWrap(); highlight(); updatePreview(); refreshStatus()
+    }
+    private func updateLocalization() {
+        modeControl.setAccessibilityLabel(tr("Markdown 显示模式", "Markdown Mode"))
+        let modeLabels = [tr("编辑", "Edit"), tr("实时预览", "Split Preview"), tr("阅读", "Read")]
+        for (index, label) in modeLabels.enumerated() {
+            modeControl.setToolTip(label, forSegment: index)
+        }
+        textView.setAccessibilityLabel(tr("文本编辑器", "Text Editor"))
+        webView.setAccessibilityLabel(tr("Markdown 阅读预览", "Markdown Preview"))
+        findBar.updateLocalization()
+        tabsView.updateLocalization()
     }
     private func applyColors() {
         appliedColorScheme = view.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua])
@@ -253,9 +282,12 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         let line = max(0, low - 1), start = ruler.lineStarts[line]
         let column = source.substring(with: NSRange(location: start, length: location - start)).count + 1
         let endings = source.range(of: "\r\n").location != NSNotFound ? "CRLF" : source.range(of: "\r").location != NSNotFound ? "CR" : "LF"
-        let limited = source.length > 1_000_000 ? "  ·  大文件：已暂停高亮与预览" : ""
+        let limited = source.length > 1_000_000 ? tr("  ·  大文件：已暂停高亮与预览", "  ·  Large file: highlighting & preview paused") : ""
         refreshChrome()
-        status.stringValue = "第 \(line + 1) 行，\(column) 列    ·    \(textView.string.count) 字符    ·    \(document?.codec.name ?? "UTF-8")    ·    \(endings)\(limited)"
+        status.stringValue = tr(
+            "第 \(line + 1) 行，\(column) 列    ·    \(textView.string.count) 字符    ·    \(document?.codec.name ?? "UTF-8")    ·    \(endings)\(limited)",
+            "Ln \(line + 1), Col \(column)    ·    \(textView.string.count) chars    ·    \(document?.codec.name ?? "UTF-8")    ·    \(endings)\(limited)"
+        )
     }
     private func highlight() {
         #if DEBUG
@@ -284,7 +316,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         #if DEBUG
         previewUpdateCount += 1
         #endif
-        let source = (textView.string as NSString).length <= 1_000_000 ? textView.string : "# 文件较大\n请切换到编辑模式查看全文。"
+        let source = (textView.string as NSString).length <= 1_000_000 ? textView.string : tr("# 文件较大\n请切换到编辑模式查看全文。", "# Large File\nSwitch to Edit mode to view the full document.")
         if !previewReady {
             if !webView.isLoading { webView.loadHTMLString(Markdown.page(source, fontSize: Preferences.shared.fontSize + 1), baseURL: nil) }
             return
@@ -292,7 +324,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         let dark = view.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         let payload = ["html": Markdown.render(source, sourcePositions: true), "size": "\(Preferences.shared.fontSize + 1)px", "theme": dark ? "dark" : "light"]
         guard let data = try? JSONSerialization.data(withJSONObject: payload), let json = String(data: data, encoding: .utf8) else { return }
-        webView.evaluateJavaScript("(() => { const p = \(json); document.querySelector('main').innerHTML = p.html; document.body.style.fontSize = p.size; document.documentElement.dataset.theme = p.theme; \(Self.previewScrollScript) })()") { [weak self] _, _ in self?.schedulePreviewScroll() }
+        webView.evaluateJavaScript("(() => { const p = \(json); document.querySelector('main').innerHTML = p.html; document.body.style.fontSize = p.size; document.documentElement.dataset.theme = p.theme; \(Self.previewScrollScript); return true; })()") { [weak self] _, _ in self?.schedulePreviewScroll() }
     }
     private static let previewScrollScript = """
     window.__budnoteScrollMap = null;
@@ -354,7 +386,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
         let bottom = index + 1 < ruler.lineStarts.count ? y(ruler.lineStarts[index + 1]) : textView.bounds.height
         let fraction = bottom > top ? min(1, max(0, (origin - top) / (bottom - top))) : 0
         let line = Double(index + 1) + Double(fraction)
-        webView.evaluateJavaScript("window.__budnoteSyncScroll?.(\(line), \(progress))", completionHandler: nil)
+        webView.evaluateJavaScript("(() => { window.__budnoteSyncScroll?.(\(line), \(progress)); return true; })()", completionHandler: nil)
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { previewReady = true; updatePreview() }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -426,7 +458,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
     }
     private func findMatch(forward: Bool) {
         let ranges = matches(), selection = textView.selectedRange()
-        guard !ranges.isEmpty else { findBar.result.stringValue = "无匹配"; return }
+        guard !ranges.isEmpty else { findBar.result.stringValue = tr("无匹配", "No matches"); return }
         let range = forward ? (ranges.first { $0.location >= NSMaxRange(selection) } ?? ranges[0])
                             : (ranges.last { $0.location < selection.location } ?? ranges[ranges.count - 1])
         textView.setSelectedRange(range); textView.scrollRangeToVisible(range)
@@ -434,19 +466,19 @@ final class EditorController: NSViewController, NSTextViewDelegate, WKNavigation
     }
     private func replaceMatches(all: Bool) {
         let ranges = matches()
-        guard !ranges.isEmpty else { findBar.result.stringValue = "无匹配"; return }
+        guard !ranges.isEmpty else { findBar.result.stringValue = tr("无匹配", "No matches"); return }
         textView.breakUndoCoalescing()
         if all {
             let source = NSMutableString(string: textView.string)
             for range in ranges.reversed() { source.replaceCharacters(in: range, with: findBar.replacement.stringValue) }
             textView.insertText(source as String, replacementRange: NSRange(location: 0, length: (textView.string as NSString).length))
-            findBar.result.stringValue = "已替换 \(ranges.count) 处"
+            findBar.result.stringValue = tr("已替换 \(ranges.count) 处", "Replaced \(ranges.count)")
         } else {
             if !ranges.contains(textView.selectedRange()) { findMatch(forward: true) }
             textView.insertText(findBar.replacement.stringValue, replacementRange: textView.selectedRange())
             findMatch(forward: true)
         }
-        textView.breakUndoCoalescing(); textView.undoManager?.setActionName(all ? "全部替换" : "替换")
+        textView.breakUndoCoalescing(); textView.undoManager?.setActionName(all ? tr("全部替换", "Replace All") : tr("替换", "Replace"))
     }
     @objc func saveDocument(_ sender: Any?) { document?.save(sender) }
     @objc func showSettings(_ sender: Any?) { (NSApp.delegate as? AppDelegate)?.showSettings(sender) }
